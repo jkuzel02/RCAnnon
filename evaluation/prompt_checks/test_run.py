@@ -31,6 +31,7 @@ REPORTS = {
         "preliminary_assessment": "Further runtime evidence is needed.",
     },
     "metrics-telemetry": {
+        "agent": "metrics-telemetry",
         "resource_findings": [],
         "throttling_detected": False,
         "saturation_identified": None,
@@ -113,6 +114,11 @@ class PromptRunnerTest(TestCase):
         )
         self.assertIn("Invalid JSON", results[1]["error"])
         self.assertIn("Schema violation", results[2]["error"])
+
+    def test_secret_key_diagnosis_requires_a_missing_key(self):
+        groups = self.expectations["05"]
+        self.assertFalse(missing_concepts("Secret lacks api-token.", groups))
+        self.assertTrue(missing_concepts("Secret contains api-token.", groups))
 
     def test_generic_symptom_is_not_a_diagnosis(self):
         groups = self.expectations["01"]

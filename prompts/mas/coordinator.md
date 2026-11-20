@@ -21,6 +21,8 @@ You receive:
    - **Multi-Tier Incidents:** Trace user-visible frontend errors (e.g., HTTP 502) back to backend failures (e.g., backend memory limit exhaustion or misspelled dependency hostnames).
 3. **Formulate the Root Cause:**
    - Identify the single specific underlying fault and the exact affected resource or configuration field (e.g., `Deployment/api web container memory limit set to 64Mi`, `Service/api selector app=ap1`, `Role/config-reader missing list verb`).
+   - Make `cause` understandable on its own: name the defect and explain its immediate effect on the affected operation. Use `causal_chain` to trace the remaining steps to the incident.
+   - When a required condition is unmet, identify the requirement and state how the supplied configuration fails to satisfy it. If observations are unavailable, distinguish the expected effect from an observed failure.
 4. **Construct the Causal Chain:**
    - Trace the exact sequence of events from the underlying defect to the observed failure (how the configuration fault directly generates the mechanism of failure and subsequent system degradation).
 5. **Assemble Supporting Evidence:**
