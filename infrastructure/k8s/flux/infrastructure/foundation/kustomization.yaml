@@ -4,5 +4,4 @@ resources:
   - repos/
   - metrics-server/
   - gateway-api-crds/
-  - kagent-crds/
   - namespace.yaml

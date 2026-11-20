@@ -9,5 +9,4 @@ resources:
   - flux.yaml
   - monitoring.yaml
   - grafana.yaml
-  - kagent.yaml
   - demo.yaml

@@ -5,15 +5,13 @@ This guide covers local development of the Kubernetes cluster using
 **macOS** and **Ubuntu inside WSL2**.
 
 The cluster runs Flux CD for GitOps reconciliation, Traefik Gateway for routing
-`*.localhost` subdomains over HTTPS, Prometheus and Grafana for monitoring, and
-Kagent (multi-agent AI for Kubernetes) with Grafana MCP integration.
+`*.localhost` subdomains over HTTPS, and Prometheus and Grafana for monitoring.
 
 Follow the setup section for your operating system:
 - [macOS Setup](#macos-setup)
 - [WSL2 (Ubuntu) Setup](#wsl2-ubuntu-setup)
 
 Then proceed to the common steps:
-- [Prepare the API Key](#prepare-the-api-key)
 - [Bootstrap](#bootstrap)
 - [Access Web Services & Applications](#access-web-services--applications)
 - [Verify Readiness](#verify-readiness)
@@ -67,7 +65,7 @@ and use [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/m
   ```bash
   lsof -iTCP:80,443 -sTCP:LISTEN
   ```
-- Domains ending in `*.localhost` (such as `kagent.localhost` and `grafana.localhost`)
+- Domains ending in `*.localhost` (such as `grafana.localhost` and `flux.localhost`)
   resolve automatically to `127.0.0.1` on macOS according to RFC 6761 without
   modifying `/etc/hosts`.
 
@@ -200,51 +198,6 @@ the socket manually.
 
 ---
 
-## Prepare the API Key
-
-From the repository root, create the private environment file only if it does
-not already exist:
-
-```bash
-cd infrastructure/k8s
-(umask 077; cp -n .env.example .env)
-chmod 600 .env
-```
-
-Edit `.env` locally and replace the example value with your actual API key:
-
-```dotenv
-API_KEY=your-api-key
-```
-
-The bootstrap requires a readable regular file owned by your user, with no
-permissions for other users and no symlink. It accepts exactly one nonempty,
-unquoted `API_KEY=value` entry, without whitespace in the value; comments and
-blank lines are allowed. Do not use `export`, quotes, or shell expansion.
-The bootstrap reads the file as data and creates the `llm-ai-einfra` Secret
-in the `kagent` namespace.
-
-The filename must be exactly `.env`. An editor-created file named `.env `
-(with a trailing space) or `.env copy.example` will not be found. Check names
-without printing the key:
-
-```bash
-ls -lb .env*
-```
-
-If you accidentally created `.env ` and `.env` does not exist, rename it:
-
-```bash
-mv -n -- '.env ' .env
-chmod 600 .env
-```
-
-A missing or invalid `.env` stops the script before cluster creation or Helm
-installation. `.env` is ignored by Git; never commit keys, copies of secret
-files, or kubeconfig files.
-
----
-
 ## Bootstrap
 
 From the repository root:
@@ -257,9 +210,8 @@ Or, if already in `infrastructure/k8s`, run `bash bootstrap.sh`. The script reso
 relative to itself.
 
 The script creates the kind cluster `local` using `kind/local.yaml`, or reuses
-it if it already exists. It installs Flux Operator and Flux controllers,
-applies the Git source and root reconciliation, waits for the `kagent`
-namespace, and creates or updates the API key Secret. It targets the
+it if it already exists. It installs Flux Operator and Flux controllers
+and applies the Git source and root Kustomization. It targets the
 `kind-local` context explicitly.
 
 Creating a cluster directly with `kind create cluster --config kind/local.yaml`
@@ -271,10 +223,11 @@ Local manifest edits are not automatically deployed. A successful bootstrap
 does not mean every application is ready: Flux continues installing applications
 in dependency order afterward.
 
-If you bootstrapped an existing cluster before the directory move, put your
-local `.env` in `infrastructure/k8s/` and rerun the bootstrap after updating
-your checkout. This reapplies the Flux source and root Kustomization with
-their new paths.
+If you bootstrapped an existing cluster before the directory move, rerun the
+bootstrap after updating your checkout. This reapplies the Flux source and
+root Kustomization with their new paths. When Flux reconciles the updated
+manifests, it can prune the former `kagent` namespace and its contents on
+clusters where it managed that namespace.
 
 ---
 
@@ -286,7 +239,6 @@ CA for `*.localhost`.
 
 | Service | URL | Notes & Credentials |
 | --- | --- | --- |
-| **Kagent UI** | `https://kagent.localhost` | Web UI for the Kagent multi-agent AI system |
 | **Grafana** | `https://grafana.localhost` | Cluster metrics & dashboards. User: `admin` |
 | **Flux Dashboard** | `https://flux.localhost` | GitOps reconciliation status and controls |
 | **Demo Apps** | `https://foo.localhost`<br>`https://bar.localhost` | Sample applications routing to demo deployments |
@@ -314,7 +266,6 @@ to open the web interface.
 kubectl --context kind-local get nodes
 kubectl --context kind-local get pods -A
 kubectl --context kind-local -n flux-system get gitrepositories,kustomizations,helmreleases
-kubectl --context kind-local -n kagent get pods
 ```
 
 The node should become `Ready`. During initial installation, pods can be

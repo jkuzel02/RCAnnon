@@ -14,8 +14,8 @@ GitHub Actions runs them on relevant pull requests and pushes to `main`.
 
 Configure the GitHub Actions secret `LLM_AI_EINFRA_API_KEY` using an API key
 authorized for the workflow. The optional Actions variable
-`LLM_AI_EINFRA_MODEL` overrides the model used in the project's Kubernetes
-configuration (`deepseek-v4.1-flash`). See the
+`LLM_AI_EINFRA_MODEL` overrides the evaluator's default model
+(`deepseek-v4.1-flash`). See the
 [e-INFRA CZ API guide](https://docs.cerit-sc.cz/en/docs/ai-as-a-service/ai-api).
 
 In GitHub Actions, open **RCA prompt checks** and select **Run workflow**.
