@@ -35,11 +35,11 @@ SPECIALIST_REPORTS = {
 @pytest.fixture
 def build_workflow(request):
     try:
-        module = import_module("proj.rca.workflows")
+        module = import_module("rca.workflows")
     except ModuleNotFoundError as error:
         if request.config.getoption("runxfail") or error.name not in {
-            "proj.rca",
-            "proj.rca.workflows",
+            "rca",
+            "rca.workflows",
         }:
             raise
         pytest.xfail("The LangGraph workflows have yet to be implemented.")

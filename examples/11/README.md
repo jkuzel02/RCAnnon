@@ -22,7 +22,7 @@ This case requires a CNI that enforces NetworkPolicy. Default kind networking ma
 
 ## Establish a healthy baseline
 
-Run from this case directory (from `proj/`, first run `cd example-cases/11`).
+Run from this case directory (from the repository root, first run `cd examples/11`).
 
 ```sh
 kubectl --context kind-local apply -k app/

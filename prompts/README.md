@@ -1,6 +1,6 @@
 # Kubernetes RCA Prompts
 
-This directory contains the prompt definitions used to benchmark single-agent and multi-agent Root Cause Analysis (RCA) approaches on the 15 Kubernetes incident scenarios in [`proj/examples/`](../examples.md).
+This directory contains the prompt definitions used to benchmark single-agent and multi-agent Root Cause Analysis (RCA) approaches on the Kubernetes incident scenarios in [`examples/`](../examples.md).
 
 ## Overview
 

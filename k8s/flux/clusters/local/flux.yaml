@@ -10,7 +10,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: enc-ai
-  path: ./proj/k8s/flux/infrastructure/config/flux
+  path: ./k8s/flux/infrastructure/config/flux
 
   prune: true
   wait: true

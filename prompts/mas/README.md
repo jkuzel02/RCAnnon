@@ -2,7 +2,7 @@
 
 This directory contains the prompt definitions for the **Multi-Agent AI Architecture** evaluated in the course project for **Root Cause Analysis (RCA)** in Kubernetes.
 
-The multi-agent system investigates incidents reproduced from the 15 benchmark scenarios in [`proj/examples/`](../../examples.md), diagnosing operational failures from raw telemetry and manifest configurations without human intervention.
+The multi-agent system investigates incidents reproduced from the benchmark scenarios in [`examples/`](../../examples.md), diagnosing operational failures from raw telemetry and manifest configurations without human intervention.
 
 ---
 
@@ -43,7 +43,7 @@ flowchart TD
 All prompts strictly follow the **6-component prompt architecture**:
 1. **Persona/Role:** Defines the specific diagnostic domain, authority, and perspective.
 2. **Context/State:** Delineates input boundaries, strictly enforcing that empty lists (`[]`) represent uncollected observations rather than measured zeroes.
-3. **Instructions/Tasks:** Step-by-step diagnostic procedures mapped directly to Kubernetes operational failure modes (covering all 15 scenarios in `proj/examples/`).
+3. **Instructions/Tasks:** Step-by-step diagnostic procedures mapped directly to Kubernetes operational failure modes (covering the scenarios in `examples/`).
 4. **Constraints:** Eliminates hallucinations, prohibits superficial status-level diagnoses, and enforces strict JSON output contracts.
 5. **Few-shot Examples:** Illustrates domain-specific inputs and expected reasoning.
 6. **Expected Format of Output:** Machine-parseable JSON schemas ensuring seamless inter-agent communication and benchmark validation.
@@ -52,7 +52,7 @@ All prompts strictly follow the **6-component prompt architecture**:
 
 ## 4. Benchmark Evaluation & Ground Truth Contract
 
-The final output produced by `coordinator.md` strictly mirrors the evaluator-only `root-cause` schema defined across all 15 cases in `proj/examples/*/rca.json`:
+The final output produced by `coordinator.md` strictly mirrors the evaluator-only `root-cause` schema defined across the cases in `examples/*/rca.json`:
 
 ```json
 {

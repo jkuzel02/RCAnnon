@@ -22,7 +22,7 @@ Before injection, inspect node allocatable CPU and confirm every eligible node h
 
 ## Establish a healthy baseline
 
-Run from this case directory (from `proj/`, first run `cd example-cases/12`).
+Run from this case directory (from the repository root, first run `cd examples/12`).
 
 ```sh
 kubectl --context kind-local apply -k app/

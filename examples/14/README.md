@@ -22,7 +22,7 @@ The cluster must use normal RBAC enforcement. Ensure no other RoleBinding or Clu
 
 ## Establish a healthy baseline
 
-Run from this case directory (from `proj/`, first run `cd example-cases/14`).
+Run from this case directory (from the repository root, first run `cd examples/14`).
 
 ```sh
 kubectl --context kind-local apply -k app/

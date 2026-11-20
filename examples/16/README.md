@@ -22,7 +22,7 @@ Use a disposable `kind-local` cluster with permission to manage namespace `rca-1
 
 ## Establish a healthy baseline
 
-Run from this case directory (`proj/examples/16/`):
+Run from this case directory (`examples/16/`):
 
 ```sh
 kubectl --context kind-local apply -k app/

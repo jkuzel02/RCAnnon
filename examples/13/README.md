@@ -22,7 +22,7 @@ A working dynamic provisioner and StorageClass/standard are required (the usual 
 
 ## Establish a healthy baseline
 
-Run from this case directory (from `proj/`, first run `cd example-cases/13`).
+Run from this case directory (from the repository root, first run `cd examples/13`).
 
 ```sh
 kubectl --context kind-local apply -k app/

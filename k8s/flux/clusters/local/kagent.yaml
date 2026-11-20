@@ -11,7 +11,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: enc-ai
-  path: ./proj/k8s/flux/infrastructure/controllers/kagent
+  path: ./k8s/flux/infrastructure/controllers/kagent
 
   prune: true
   wait: true

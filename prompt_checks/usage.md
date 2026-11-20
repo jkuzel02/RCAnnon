@@ -3,8 +3,8 @@
 Run the offline checks from the repository root with Python 3.12:
 
 ```sh
-python -m pip install -r proj/prompt_checks/requirements.txt
-python -m unittest discover -s proj/prompt_checks -v
+python -m pip install -r prompt_checks/requirements.txt
+python -m unittest discover -s prompt_checks -v
 ```
 
 These checks use the real cases and substitute deterministic model responses.
@@ -19,9 +19,9 @@ configuration (`deepseek-v4.1-flash`). See the
 [e-INFRA CZ API guide](https://docs.cerit-sc.cz/en/docs/ai-as-a-service/ai-api).
 
 In GitHub Actions, open **RCA prompt checks** and select **Run workflow**.
-The default input runs case `01`. Clear the case input to run all 15 cases.
+The default input runs case `01`. Clear the case input to run all 16 cases.
 For automatic live runs on relevant pushes to `main`, set the repository
-variable `RCA_LIVE_PROMPT_CHECKS` to `true`. A full run makes up to 90 sequential
+variable `RCA_LIVE_PROMPT_CHECKS` to `true`. A full run makes up to 96 sequential
 requests. Check the
 [provider's benchmarking guidance](https://docs.cerit-sc.cz/en/docs/ai-as-a-service/chat-ai#shared-resources-and-benchmarking)
 before running the full benchmark.
@@ -30,7 +30,7 @@ Locally, supply the API key via the environment and run from the repository
 root:
 
 ```sh
-python -m proj.prompt_checks.run --case 01 --output prompt-results.json
+python -m prompt_checks.run --case 01 --output prompt-results.json
 ```
 
 ## Interpreting results

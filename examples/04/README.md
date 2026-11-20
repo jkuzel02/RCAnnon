@@ -22,7 +22,7 @@ No extra cluster extension is required. Validate the healthy baseline before inj
 
 ## Establish a healthy baseline
 
-Run from this case directory (from `proj/`, first run `cd example-cases/04`).
+Run from this case directory (from the repository root, first run `cd examples/04`).
 
 ```sh
 kubectl --context kind-local apply -k app/

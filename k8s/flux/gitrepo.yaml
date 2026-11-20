@@ -4,13 +4,13 @@ metadata:
   name: enc-ai
   namespace: flux-system
 spec:
-  url: https://github.com/jkuzel02/ENC-AI
+  url: https://github.com/jkuzel02/RCAnnon
   ref:
     branch: main
   
   ignore: |
     **
-    !/proj/k8s/flux/
+    !/k8s/flux/
 
   interval: 1m
   timeout: 30s

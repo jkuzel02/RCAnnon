@@ -206,7 +206,7 @@ From the repository root, create the private environment file only if it does
 not already exist:
 
 ```bash
-cd proj/k8s
+cd k8s
 (umask 077; cp -n .env.example .env)
 chmod 600 .env
 ```
@@ -250,10 +250,10 @@ files, or kubeconfig files.
 From the repository root:
 
 ```bash
-bash proj/k8s/bootstrap.sh
+bash k8s/bootstrap.sh
 ```
 
-Or, if already in `proj/k8s`, run `bash bootstrap.sh`. The script resolves paths
+Or, if already in `k8s`, run `bash bootstrap.sh`. The script resolves paths
 relative to itself.
 
 The script creates the kind cluster `local` using `kind/local.yaml`, or reuses
@@ -263,10 +263,10 @@ namespace, and creates or updates the API key Secret. It targets the
 `kind-local` context explicitly.
 
 Creating a cluster directly with `kind create cluster --config kind/local.yaml`
-(from `proj/k8s`) creates only Kubernetes; it does not replace the bootstrap.
+(from `k8s`) creates only Kubernetes; it does not replace the bootstrap.
 If you already did that, run the bootstrap to finish the setup.
 
-Flux reconciles the `main` branch of `https://github.com/jkuzel02/ENC-AI`.
+Flux reconciles the `main` branch of `https://github.com/jkuzel02/RCAnnon`.
 Local manifest edits are not automatically deployed. A successful bootstrap
 does not mean every application is ready: Flux continues installing applications
 in dependency order afterward.
@@ -321,7 +321,7 @@ remains unready, inspect its conditions and events, for example:
 kubectl --context kind-local -n flux-system describe kustomization foundation
 ```
 
-After fixing a prerequisite, rerun `bash proj/k8s/bootstrap.sh` from the
+After fixing a prerequisite, rerun `bash k8s/bootstrap.sh` from the
 repository root; it reuses the existing cluster.
 
 ---

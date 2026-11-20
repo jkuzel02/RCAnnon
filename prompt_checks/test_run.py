@@ -5,7 +5,7 @@ from io import BytesIO
 from unittest import TestCase
 from unittest.mock import patch
 
-from proj.prompt_checks.run import (
+from prompt_checks.run import (
     ENDPOINT,
     SPECIALISTS,
     complete,
@@ -146,7 +146,7 @@ class PromptRunnerTest(TestCase):
         self.assertIn("no metrics in the input", results[4]["error"])
         self.assertEqual(results[-1]["status"], "blocked")
 
-    @patch("proj.prompt_checks.run.urlopen")
+    @patch("prompt_checks.run.urlopen")
     def test_chat_completion_request_and_usage(self, urlopen):
         response = {
             "choices": [{"message": {"content": "RCA result"}, "finish_reason": "stop"}],
