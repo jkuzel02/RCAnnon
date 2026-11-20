@@ -4,15 +4,15 @@ on:
   pull_request:
     paths:
       - 'prompts/**'
-      - 'examples/**'
-      - 'prompt_checks/**'
+      - 'scenarios/**'
+      - 'evaluation/prompt_checks/**'
       - '.github/workflows/prompt-checks.yml'
   push:
     branches: [main]
     paths:
       - 'prompts/**'
-      - 'examples/**'
-      - 'prompt_checks/**'
+      - 'scenarios/**'
+      - 'evaluation/prompt_checks/**'
       - '.github/workflows/prompt-checks.yml'
   workflow_dispatch:
     inputs:
@@ -35,8 +35,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: python -m pip install -r prompt_checks/requirements.txt
-      - run: python -m unittest discover -s prompt_checks -v
+      - run: python -m pip install -r evaluation/prompt_checks/requirements.txt
+      - run: python -m unittest discover -s evaluation/prompt_checks -v
 
   live:
     needs: offline
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: python -m pip install -r prompt_checks/requirements.txt
+      - run: python -m pip install -r evaluation/prompt_checks/requirements.txt
       - name: Evaluate prompts on e-INFRA CZ
         env:
           LLM_AI_EINFRA_API_KEY: ${{ secrets.LLM_AI_EINFRA_API_KEY }}
@@ -62,7 +62,7 @@ jobs:
           if [[ -n "$CASE_ID" ]]; then
             args+=(--case "$CASE_ID")
           fi
-          python -m prompt_checks.run "${args[@]}"
+          python -m evaluation.prompt_checks.run "${args[@]}"
       - name: Upload prompt results
         if: always()
         uses: actions/upload-artifact@v6
