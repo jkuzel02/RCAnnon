@@ -68,6 +68,7 @@ REPORT_SCHEMAS = {
         preliminary_assessment=TEXT,
     ),
     "metrics-telemetry": object_with(
+        agent={"const": "metrics-telemetry"},
         resource_findings=array(
             object_with(
                 metric_name=TEXT,
