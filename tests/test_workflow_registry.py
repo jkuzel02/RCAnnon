@@ -14,12 +14,17 @@ from rca.workflows import (
 )
 
 
-def test_default_variants_are_registered_as_stubs() -> None:
+def test_default_variants_are_registered() -> None:
     variants = list_variants()
     for expected in ("base", "optimal", "mas"):
         assert expected in variants
+
+    graph = build_workflow("base", complete=Mock(return_value="ok"))
+    assert graph.invoke({"context": {"incident": "test"}})["root-cause"] == "ok"
+
+    for stub_variant in ("optimal", "mas"):
         with pytest.raises(NotImplementedError):
-            build_workflow(expected, complete=Mock(return_value="ok"))
+            build_workflow(stub_variant, complete=Mock(return_value="ok"))
 
 
 def test_unknown_variant_is_rejected() -> None:
