@@ -38,14 +38,14 @@ jobs:
           enable-cache: true
       - name: Run English-only checker unit tests
         if: steps.changes.outputs.changed == 'true'
-        run: uv run --with-requirements .github/scripts/requirements.txt python -m unittest discover -s .github/scripts -v
+        run: uv run --no-project --with-requirements .github/scripts/requirements.txt python -m unittest discover -s .github/scripts -v
       - name: Check changed Markdown files on pull request
         if: github.event_name == 'pull_request' && steps.changes.outputs.changed == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: uv run --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md --diff-base "origin/${BASE_REF}"
+        run: uv run --no-project --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md --diff-base "origin/${BASE_REF}"
       - name: Check all English Markdown files on manual dispatch
         if: github.event_name == 'workflow_dispatch'
         run: |
           mapfile -t md_files < <(git ls-files '*.md')
-          uv run --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md "${md_files[@]}"
+          uv run --no-project --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md "${md_files[@]}"

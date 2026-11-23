@@ -1,0 +1,97 @@
+{
+  "schema_version": "v1",
+  "snapshot_id": "snap-synthetic-partial-001",
+  "scope_hash": "d3b45834c5f2992a223eb6e31fad3b82e1a25755c70a4876f18307d9ee5df445",
+  "source_type": "live",
+  "context_alias": "lab",
+  "namespaces": [
+    "demo"
+  ],
+  "collected_at": "2026-11-20T12:05:00Z",
+  "observed_at": "2026-11-20T12:04:40Z",
+  "context": {
+    "incident": "Checkout pods in namespace demo are restarting while metrics and RBAC checks are degraded.",
+    "time_window": null,
+    "resources": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "metadata": {
+          "name": "checkout",
+          "namespace": "demo"
+        },
+        "spec": {
+          "replicas": 1,
+          "template": {
+            "spec": {
+              "containers": [
+                {
+                  "name": "web",
+                  "resources": {
+                    "requests": {
+                      "cpu": "25m",
+                      "memory": "32Mi"
+                    },
+                    "limits": {
+                      "cpu": "500m",
+                      "memory": "64Mi"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "reason": "OOMKilled",
+        "involved_object": "Pod/checkout-7d9b4f8c9-x2k9p",
+        "message": "Container web terminated with exit code 137."
+      }
+    ],
+    "logs": [
+      {
+        "pod": "checkout-7d9b4f8c9-x2k9p",
+        "container": "web",
+        "stream": "previous",
+        "message": "retained_mib=62 [truncated]"
+      }
+    ],
+    "metrics": [],
+    "checks": []
+  },
+  "coverage": {
+    "resources": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "events": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "logs": {
+      "status": "truncated",
+      "count": 1,
+      "reason": "byte_limit_reached",
+      "truncated": true
+    },
+    "metrics": {
+      "status": "unreachable",
+      "count": 0,
+      "reason": "metrics_endpoint_unavailable",
+      "truncated": false
+    },
+    "checks": {
+      "status": "forbidden",
+      "count": 0,
+      "reason": "rbac_denied",
+      "truncated": false
+    }
+  }
+}

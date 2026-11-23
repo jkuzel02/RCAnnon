@@ -1,0 +1,53 @@
+{
+  "schema_version": "v1",
+  "snapshot_id": "snap-synthetic-empty-001",
+  "scope_hash": "b4f21f2b01b64d7f396938c4fac8ccc86a57f6bac7012773cefccfa953ff279f",
+  "source_type": "live",
+  "context_alias": "lab",
+  "namespaces": [
+    "demo"
+  ],
+  "collected_at": "2026-11-20T12:10:00Z",
+  "observed_at": null,
+  "context": {
+    "incident": "Checkout availability degraded while target cluster telemetry is unreachable.",
+    "time_window": null,
+    "resources": [],
+    "events": [],
+    "logs": [],
+    "metrics": [],
+    "checks": []
+  },
+  "coverage": {
+    "resources": {
+      "status": "unreachable",
+      "count": 0,
+      "reason": "api_unreachable",
+      "truncated": false
+    },
+    "events": {
+      "status": "unreachable",
+      "count": 0,
+      "reason": "api_unreachable",
+      "truncated": false
+    },
+    "logs": {
+      "status": "unreachable",
+      "count": 0,
+      "reason": "api_unreachable",
+      "truncated": false
+    },
+    "metrics": {
+      "status": "timeout",
+      "count": 0,
+      "reason": "metrics_timeout",
+      "truncated": false
+    },
+    "checks": {
+      "status": "not_requested",
+      "count": 0,
+      "reason": "skipped_after_api_failure",
+      "truncated": false
+    }
+  }
+}

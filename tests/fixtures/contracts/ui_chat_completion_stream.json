@@ -1,0 +1,59 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/v1/chat/completions",
+    "headers": {
+      "Authorization": "Bearer example-ui-service-bearer",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "model": "rcannon-mas",
+      "stream": true,
+      "messages": [
+        {
+          "role": "user",
+          "content": "/rca context=lab namespace=demo -- checkout pods are restarting with OOMKilled"
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "X-Request-Id": "req-synthetic-mas-001"
+    },
+    "sse_events": [
+      {
+        "id": "chatcmpl-run-synthetic-mas-001",
+        "object": "chat.completion.chunk",
+        "created": 1763640305,
+        "model": "rcannon-mas",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "role": "assistant",
+              "content": "**Run:** `run-synthetic-mas-001` | **Variant:** `mas` | **Status:** `qualified`\n\n## Cause\n\nDeployment/checkout sets the web container memory limit to 64Mi while its working set reaches 62 MiB before runtime overhead.\n\n## Causal Chain\n\nMemory pressure inside container web hits the 64Mi cgroup limit, triggering OOMKilled terminations and pod restarts.\n\n## Supporting Evidence\n\n- Deployment/checkout in namespace demo specifies limits.memory=64Mi for container web.\n- Event OOMKilled on Pod/checkout-7d9b4f8c9-x2k9p reports exit code 137.\n- Previous container log line records retained_mib=62 prior to termination.\n\n## Remediation\n\nIncrease the web container memory limit in Deployment/checkout to at least 256Mi.\n\n## Recovery Check\n\nPods in Deployment/checkout remain Running and Ready without new OOMKilled events for 2 minutes.\n\n## Coverage Limitations\n\n- checks: forbidden (rbac_denied)\n- logs: truncated (byte_limit_reached)\n- metrics: unreachable (metrics_endpoint_unavailable)"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      {
+        "id": "chatcmpl-run-synthetic-mas-001",
+        "object": "chat.completion.chunk",
+        "created": 1763640305,
+        "model": "rcannon-mas",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {},
+            "finish_reason": "stop"
+          }
+        ]
+      },
+      "[DONE]"
+    ]
+  }
+}

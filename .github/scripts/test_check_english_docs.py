@@ -84,10 +84,22 @@ Toto je pouze ukázkový text uvnitř bloku kódu a neměl by selhat.
 
     def test_existing_english_repo_docs_pass(self) -> None:
         excluded_non_english = {"docs/proposal.md"}
+        excluded_dirs = {
+            ".git",
+            ".venv",
+            "venv",
+            ".tox",
+            ".nox",
+            "node_modules",
+            ".pytest_cache",
+            "__pycache__",
+            "build",
+            "dist",
+        }
         md_files = sorted(
             p
             for p in REPO_ROOT.rglob("*.md")
-            if ".git" not in p.parts
+            if not any(part in excluded_dirs for part in p.relative_to(REPO_ROOT).parts)
             and p.relative_to(REPO_ROOT).as_posix() not in excluded_non_english
         )
         self.assertTrue(md_files, "Expected Markdown files in repository")

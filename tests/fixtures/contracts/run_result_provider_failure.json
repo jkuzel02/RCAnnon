@@ -1,0 +1,55 @@
+{
+  "schema_version": "v1",
+  "request_id": "req-synthetic-fail-001",
+  "run_id": "run-synthetic-fail-001",
+  "variant": "optimal",
+  "snapshot_id": "snap-synthetic-full-001",
+  "snapshot_hash": "17462f86f08bf197369c089436ea8326f0a13ac9b5d3cb9c3d4085afd231bd3f",
+  "status": "failed",
+  "coverage": {
+    "resources": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "events": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "logs": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "metrics": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "checks": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    }
+  },
+  "limitations": [],
+  "result": null,
+  "error_code": "provider_timeout",
+  "error_message": "Upstream model provider timed out after 30s.",
+  "usage": {
+    "duration_seconds": 30.01,
+    "logical_calls": 1,
+    "reported_input_tokens": null,
+    "reported_output_tokens": null,
+    "reported_total_tokens": null,
+    "unknown_token_calls": 1
+  },
+  "created_at": "2026-11-20T12:15:00Z",
+  "completed_at": "2026-11-20T12:15:30Z"
+}
