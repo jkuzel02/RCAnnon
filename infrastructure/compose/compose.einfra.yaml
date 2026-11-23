@@ -1,0 +1,15 @@
+services:
+  api:
+    secrets:
+      - rcannon_llm_api_key
+    environment:
+      RCANNON_PROVIDER_MODE: einfra
+      LLM_AI_EINFRA_API_KEY_FILE: /run/secrets/rcannon_llm_api_key
+      LLM_AI_EINFRA_BASE_URL: ${LLM_AI_EINFRA_BASE_URL:-https://llm.ai.e-infra.cz/v1}
+      LLM_AI_EINFRA_MODEL: ${LLM_AI_EINFRA_MODEL:-deepseek-v4.1-flash}
+      LLM_AI_EINFRA_TIMEOUT_SECONDS: ${LLM_AI_EINFRA_TIMEOUT_SECONDS:-60}
+      LLM_AI_EINFRA_DEADLINE_SECONDS: ${LLM_AI_EINFRA_DEADLINE_SECONDS:-90}
+
+secrets:
+  rcannon_llm_api_key:
+    file: ${RCANNON_LLM_API_KEY_SECRET_FILE:-./infrastructure/compose/secrets/llm_api_key.secret}

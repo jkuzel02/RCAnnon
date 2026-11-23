@@ -221,3 +221,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local Compose secrets and kubeconfigs (never commit credentials)
+infrastructure/compose/secrets/*.secret
+infrastructure/compose/secrets/*.txt
+infrastructure/compose/kubeconfig/
+*.kubeconfig
