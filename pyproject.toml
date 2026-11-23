@@ -8,15 +8,19 @@ version = "0.1.0"
 description = "Kubernetes root cause analysis workflows and benchmark harness."
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "fastapi>=0.115,<1",
     "jsonschema>=4.23,<5",
     "langchain-openai>=0.3,<2",
     "langgraph>=0.4,<2",
     "openai>=1.60,<3",
     "pydantic>=2.10,<3",
+    "sse-starlette>=2.2,<4",
+    "uvicorn>=0.34,<1",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28,<1",
     "pytest>=8.4,<10",
 ]
 
