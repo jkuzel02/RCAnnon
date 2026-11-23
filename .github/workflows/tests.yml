@@ -8,6 +8,8 @@ on:
       - 'tests/**'
       - 'rca/**'
       - 'prompts/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
       - '.python-version'
       - '.github/workflows/tests.yml'
   workflow_dispatch:
@@ -22,8 +24,27 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          fetch-depth: 0
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v6
+      - id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE '(^tests/|^rca/|^prompts/|^pyproject\.toml$|^uv\.lock$|^\.github/workflows/tests\.yml$|^\.python-version$)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No workflow or test files changed; skipping."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.changes.outputs.changed == 'true'
+        uses: astral-sh/setup-uv@v6
         with:
           python-version-file: .python-version
-      - run: uv run --with-requirements tests/requirements.txt pytest tests -rx
+          enable-cache: true
+      - if: steps.changes.outputs.changed == 'true'
+        run: uv run --with-requirements tests/requirements.txt pytest tests -rx
