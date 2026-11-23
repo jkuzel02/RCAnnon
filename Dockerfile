@@ -34,6 +34,12 @@ ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+LABEL org.opencontainers.image.title="RCAnnon" \
+      org.opencontainers.image.description="Read-only Kubernetes root cause analysis API and LangGraph workflows" \
+      org.opencontainers.image.source="https://github.com/jkuzel02/RCAnnon" \
+      org.opencontainers.image.documentation="https://github.com/jkuzel02/RCAnnon/blob/main/docs/container-image.md" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
 USER 10001:10001
 
 EXPOSE 8000

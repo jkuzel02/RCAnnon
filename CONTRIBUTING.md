@@ -43,6 +43,12 @@ Working in this repo requires the `gh` tool installed. Check the presence of the
 - Use **`uv`** (`uv run ...`) for all Python execution and dependency resolution; do not use bare `python`, `python3`, or `pip install`.
 - The repository pins Python `3.12` via `.python-version` at the repository root, which `uv` picks up automatically in local runs and CI.
 
+## Versioning, Changelog, and Releases
+
+- **Tag-to-package version alignment (MUST match):** Release versions use SemVer Git tags (`X.Y.Z`, starting at `0.1.0`). The release tag, `[project].version` in `pyproject.toml`, and `"."` in `.release-please-manifest.json` **MUST match**. Both the unit test suite and the GHCR release workflow fail closed on any version mismatch.
+- **Automated `CHANGELOG.md`:** `CHANGELOG.md` and version bumps are automated via Release Please (`.github/workflows/release-please.yml` and `release-please-config.json`) from [Conventional Commits](https://www.conventionalcommits.org/). Do not manually edit `CHANGELOG.md` in regular PRs; write accurate English Conventional Commit titles because they generate release notes.
+- **Release approvals and GHCR publishing:** Release PRs opened by Release Please require human review and human merge just like any other PR (AI agents must never approve, merge, or push release tags). Merging a Release PR creates the matching tag, GitHub Release, and multi-arch container image (`ghcr.io/jkuzel02/rcannon:<version>`, documented in `docs/container-image.md`).
+
 ## Pull Request Approvals
 
 - Every PR MUST be reviewed by a human.

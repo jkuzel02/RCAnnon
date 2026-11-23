@@ -42,6 +42,17 @@ curl -fsS http://127.0.0.1:3080/v1/models
 docker compose exec api python -m rca.api.server --check-config
 ```
 
+## Using Prebuilt GHCR Images
+
+Instead of building locally, you can deploy the multi-architecture (`linux/amd64`, `linux/arm64`) image published to GitHub Container Registry:
+
+```sh
+./infrastructure/compose/scripts/init-dev-secrets.sh
+RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:0.1.0 docker compose up -d --no-build
+```
+
+Use `:main` for rolling `main` builds or pin by manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification.
+
 ## Enabling Live e-INFRA CZ Inference
 
 1. Create `infrastructure/compose/secrets/llm_api_key.secret` containing your e-INFRA CZ API token (no trailing quotes). Startup fails closed if `RCANNON_PROVIDER_MODE=einfra` is active and the secret file is missing or empty.

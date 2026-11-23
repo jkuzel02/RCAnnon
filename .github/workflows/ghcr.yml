@@ -1,0 +1,191 @@
+name: Container image (GHCR)
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.python-version'
+      - 'rca/**'
+      - 'prompts/**'
+      - '.github/workflows/ghcr.yml'
+  push:
+    branches: [main]
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+  workflow_call:
+    inputs:
+      tag_name:
+        description: Release tag name (must match pyproject.toml version)
+        required: false
+        type: string
+        default: ''
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ghcr-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Prepare metadata and validate version alignment
+        id: prep
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          uv run --no-project python - <<'EOF'
+          import json
+          import os
+          import re
+          import tomllib
+          from pathlib import Path
+
+          pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          project_version = str(pyproject["project"]["version"]).strip()
+
+          manifest = json.loads(Path(".release-please-manifest.json").read_text(encoding="utf-8"))
+          manifest_version = str(manifest["."]).strip()
+
+          if project_version != manifest_version:
+              raise SystemExit(
+                  f"Version mismatch: pyproject.toml={project_version!r} vs "
+                  f".release-please-manifest.json={manifest_version!r}"
+              )
+
+          event_name = os.environ["EVENT_NAME"]
+          ref_type = os.environ["REF_TYPE"]
+          ref_name = os.environ["REF_NAME"]
+          input_tag = os.environ["INPUT_TAG"].strip()
+
+          release_tag = input_tag or (ref_name if ref_type == "tag" else "")
+          minor_tag = ""
+          is_stable = "false"
+
+          if release_tag:
+              normalized_tag = release_tag.removeprefix("v")
+              if normalized_tag != project_version:
+                  raise SystemExit(
+                      f"Release tag {release_tag!r} does not match pyproject.toml version {project_version!r}."
+                  )
+              match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(-.+)?", normalized_tag)
+              if not match:
+                  raise SystemExit(f"Release tag {release_tag!r} is not valid SemVer.")
+              minor_tag = f"{match.group(1)}.{match.group(2)}"
+              if match.group(4) is None:
+                  is_stable = "true"
+
+          should_push = "false" if event_name == "pull_request" else "true"
+          repo_lc = os.environ["REPOSITORY"].lower()
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"should_push={should_push}\n")
+              fh.write(f"repository_lc={repo_lc}\n")
+              fh.write(f"release_tag={release_tag}\n")
+              fh.write(f"minor_tag={minor_tag}\n")
+              fh.write(f"is_stable_release={is_stable}\n")
+              fh.write(f"project_version={project_version}\n")
+          EOF
+
+      - name: Set up QEMU for multi-arch build
+        if: steps.prep.outputs.should_push == 'true'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: steps.prep.outputs.should_push == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract OCI metadata and tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ steps.prep.outputs.repository_lc }}
+          labels: |
+            org.opencontainers.image.title=RCAnnon
+            org.opencontainers.image.description=Read-only Kubernetes root cause analysis API and LangGraph workflows
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/docs/container-image.md
+            org.opencontainers.image.licenses=Apache-2.0
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ steps.prep.outputs.release_tag }},enable=${{ steps.prep.outputs.release_tag != '' }}
+            type=raw,value=${{ steps.prep.outputs.minor_tag }},enable=${{ steps.prep.outputs.minor_tag != '' }}
+            type=raw,value=latest,enable=${{ steps.prep.outputs.is_stable_release == 'true' }}
+
+      - name: Build and verify PR image (no push)
+        if: steps.prep.outputs.should_push != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: rcannon-ci:pr
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+
+      - name: Verify non-root user and healthcheck on PR image
+        if: steps.prep.outputs.should_push != 'true'
+        run: |
+          user="$(docker inspect rcannon-ci:pr --format '{{.Config.User}}')"
+          test "$user" = "10001:10001"
+          healthcheck="$(docker inspect rcannon-ci:pr --format '{{if .Config.Healthcheck}}present{{end}}')"
+          test "$healthcheck" = "present"
+
+      - name: Build and push multi-arch GHCR image
+        id: build
+        if: steps.prep.outputs.should_push == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          sbom: true
+          provenance: mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Attest build provenance
+        if: steps.prep.outputs.should_push == 'true'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ steps.prep.outputs.repository_lc }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
