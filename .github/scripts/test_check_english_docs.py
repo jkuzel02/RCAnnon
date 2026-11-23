@@ -83,15 +83,12 @@ Toto je pouze ukázkový text uvnitř bloku kódu a neměl by selhat.
         self.assertEqual(violations, [])
 
     def test_existing_english_repo_docs_pass(self) -> None:
-        legacy_non_english = {
-            "docs/proposal.md",
-            "test_results/RCAnnon-protokol.md",
-        }
+        excluded_non_english = {"docs/proposal.md"}
         md_files = sorted(
             p
             for p in REPO_ROOT.rglob("*.md")
             if ".git" not in p.parts
-            and p.relative_to(REPO_ROOT).as_posix() not in legacy_non_english
+            and p.relative_to(REPO_ROOT).as_posix() not in excluded_non_english
         )
         self.assertTrue(md_files, "Expected Markdown files in repository")
         violations = checker.check_files(md_files, self.detector)
