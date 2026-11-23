@@ -1,0 +1,113 @@
+# Example read-only RBAC for the RCAnnon management-host collector.
+#
+# Apply only to target clusters/namespaces you want RCAnnon to inspect.
+# Keep Secrets, pods/exec, pods/proxy, nodes/proxy, and write verbs excluded.
+# This standalone manifest is not applied by infrastructure/k8s/bootstrap.sh.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rcannon-collector
+  namespace: rcannon-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rcannon-readonly-namespace
+  namespace: demo
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+      - services
+      - endpoints
+      - events
+      - configmaps
+      - persistentvolumeclaims
+      - serviceaccounts
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - daemonsets
+      - statefulsets
+    verbs: ["get", "list"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources:
+      - endpointslices
+    verbs: ["get", "list"]
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - networkpolicies
+      - ingresses
+    verbs: ["get", "list"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources:
+      - gateways
+      - httproutes
+    verbs: ["get", "list"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - roles
+      - rolebindings
+    verbs: ["get", "list"]
+  - apiGroups: ["events.k8s.io"]
+    resources:
+      - events
+    verbs: ["get", "list"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources:
+      - pods
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rcannon-readonly-namespace
+  namespace: demo
+subjects:
+  - kind: ServiceAccount
+    name: rcannon-collector
+    namespace: rcannon-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rcannon-readonly-namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rcannon-readonly-cluster-storage
+rules:
+  - apiGroups: [""]
+    resources:
+      - persistentvolumes
+    verbs: ["get", "list"]
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+      - storageclasses
+      - csidrivers
+      - csinodes
+    verbs: ["get", "list"]
+  # Optional opt-in rules (uncomment only if cluster-scoped Node/RBAC inspection is enabled):
+  # - apiGroups: [""]
+  #   resources: ["nodes"]
+  #   verbs: ["get", "list"]
+  # - apiGroups: ["rbac.authorization.k8s.io"]
+  #   resources: ["clusterroles", "clusterrolebindings"]
+  #   verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rcannon-readonly-cluster-storage
+subjects:
+  - kind: ServiceAccount
+    name: rcannon-collector
+    namespace: rcannon-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rcannon-readonly-cluster-storage
