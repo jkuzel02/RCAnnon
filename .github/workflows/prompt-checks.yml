@@ -2,11 +2,6 @@ name: RCA prompt checks
 
 on:
   pull_request:
-    paths:
-      - 'prompts/**'
-      - 'scenarios/**'
-      - 'evaluation/prompt_checks/**'
-      - '.github/workflows/prompt-checks.yml'
   push:
     branches: [main]
     paths:
