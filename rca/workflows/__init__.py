@@ -8,6 +8,7 @@ from typing import Any
 
 from rca.contracts.provider import CompleteFn
 from rca.workflows.base import build_base_workflow
+from rca.workflows.optimal import build_optimal_workflow
 
 WorkflowBuilder = Callable[..., Any]
 
@@ -69,8 +70,8 @@ def build_workflow(variant: str, *, complete: CompleteFn) -> Any:
 
 
 register_variant("base", build_base_workflow)
-for _default_variant in ("optimal", "mas"):
-    register_variant(_default_variant, _make_stub_builder(_default_variant))
+register_variant("optimal", build_optimal_workflow)
+register_variant("mas", _make_stub_builder("mas"))
 
 __all__ = [
     "WorkflowBuilder",

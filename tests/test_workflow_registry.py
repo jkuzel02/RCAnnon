@@ -19,12 +19,18 @@ def test_default_variants_are_registered() -> None:
     for expected in ("base", "optimal", "mas"):
         assert expected in variants
 
-    graph = build_workflow("base", complete=Mock(return_value="ok"))
-    assert graph.invoke({"context": {"incident": "test"}})["root-cause"] == "ok"
+    base_graph = build_workflow("base", complete=Mock(return_value="ok"))
+    assert base_graph.invoke({"context": {"incident": "test"}})["root-cause"] == "ok"
 
-    for stub_variant in ("optimal", "mas"):
-        with pytest.raises(NotImplementedError):
-            build_workflow(stub_variant, complete=Mock(return_value="ok"))
+    valid_rca = (
+        '{"cause":"c","causal_chain":"cc","supporting_evidence":["e"],'
+        '"remediation":"r","recovery_check":"rc"}'
+    )
+    optimal_graph = build_workflow("optimal", complete=Mock(return_value=valid_rca))
+    assert optimal_graph.invoke({"context": {"incident": "test"}})["root-cause"]["cause"] == "c"
+
+    with pytest.raises(NotImplementedError):
+        build_workflow("mas", complete=Mock(return_value="ok"))
 
 
 def test_unknown_variant_is_rejected() -> None:
