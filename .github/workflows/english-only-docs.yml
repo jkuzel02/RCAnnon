@@ -32,7 +32,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: python .github/scripts/check_english_docs.py --diff-base "origin/${BASE_REF}"
+        run: python .github/scripts/check_english_docs.py --exclude docs/proposal.md --diff-base "origin/${BASE_REF}"
       - name: Check all English Markdown files on manual dispatch
         if: github.event_name == 'workflow_dispatch'
         run: |

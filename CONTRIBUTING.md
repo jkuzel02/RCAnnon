@@ -34,7 +34,8 @@ Working in this repo requires the `gh` tool installed. Check the presence of the
 ## Language Policy (English Only)
 
 - All repository content MUST be written in **English**: documentation, Markdown files, prompts, code comments, test fixtures, commit messages, issues, and pull request descriptions.
-- AI coding agents MUST follow this rule even when the user communicates in another language or when referencing legacy non-English files (such as `docs/proposal.md`).
+- **Exception:** `docs/proposal.md` is intentionally kept in Czech for the course submission and is excluded from the English-only CI check.
+- AI coding agents MUST follow this rule even when the user communicates in another language or when referencing `docs/proposal.md`.
 - Pull requests modifying or adding Markdown files are automatically checked in CI (`.github/workflows/english-only-docs.yml`).
 
 ## Pull Request Approvals
