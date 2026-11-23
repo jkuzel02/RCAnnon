@@ -1,7 +1,9 @@
 """Offline checks of the live prompt runner and its case fixtures."""
 
 import json
-from io import BytesIO
+from io import BytesIO, StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -11,6 +13,7 @@ from evaluation.prompt_checks.run import (
     complete,
     evaluate_case,
     load_inputs,
+    main,
     missing_concepts,
 )
 
@@ -172,3 +175,31 @@ class PromptRunnerTest(TestCase):
         self.assertEqual(body["model"], "test-model")
         self.assertEqual(body["messages"][0], {"role": "system", "content": "Prompt"})
         self.assertEqual(json.loads(body["messages"][1]["content"]), {"context": {}})
+
+    def test_main_cli_only_writes_no_file_by_default(self):
+        case = self.cases["01"]
+        expected = case["root-cause"]
+
+        def fake_complete(model, api_key, prompt, payload):
+            if prompt == self.prompts["base.md"]:
+                return expected["cause"], None
+            for specialist, report in REPORTS.items():
+                if prompt == self.prompts[f"mas/{specialist}.md"]:
+                    return json.dumps(report), None
+            return json.dumps(expected), None
+
+        with (
+            TemporaryDirectory() as tmpdir,
+            patch.dict("os.environ", {"LLM_AI_EINFRA_API_KEY": "fake-key"}, clear=True),
+            patch("evaluation.prompt_checks.run.complete", side_effect=fake_complete),
+            patch("sys.stdout", new_callable=StringIO) as stdout,
+        ):
+            status = main(["--case", "01"])
+            self.assertEqual(status, 0)
+            self.assertIn("6/6 prompt checks passed.", stdout.getvalue())
+            self.assertEqual(list(Path(tmpdir).iterdir()), [])
+
+            output_file = Path(tmpdir) / "results.json"
+            status_with_out = main(["--case", "01", "--output", str(output_file)])
+            self.assertEqual(status_with_out, 0)
+            self.assertTrue(output_file.is_file())

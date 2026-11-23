@@ -38,6 +38,11 @@ Working in this repo requires the `gh` tool installed. Check the presence of the
 - AI coding agents MUST follow this rule even when the user communicates in another language or when referencing `docs/proposal.md`.
 - Pull requests modifying or adding Markdown files are automatically checked in CI (`.github/workflows/english-only-docs.yml`).
 
+## Python Runtime (`uv` + Python 3.12)
+
+- Use **`uv`** (`uv run ...`) for all Python execution and dependency resolution; do not use bare `python`, `python3`, or `pip install`.
+- The repository pins Python `3.12` via `.python-version` at the repository root, which `uv` picks up automatically in local runs and CI.
+
 ## Pull Request Approvals
 
 - Every PR MUST be reviewed by a human.
@@ -86,6 +91,7 @@ privileged credentials outside the agent environment.
 ## NEVER
 
 - Write non-English content in repository files, commit messages, issues, or pull requests.
+- Use bare `python` or `pip` instead of `uv` with the pinned `.python-version` (`3.12`).
 - Push to `main`, directly or by force.
 - Force-push or rewrite history on shared branches.
 - Commit secrets, tokens, or kubeconfig files.

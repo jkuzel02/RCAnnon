@@ -14,6 +14,7 @@ Before making **any** change in this repository, you MUST read [CONTRIBUTING.md]
 ## Hard Rules (NEVER)
 
 - **NEVER** write non-English content in repository files. All docs, Markdown files, code comments, prompts, test fixtures, commit messages, PR descriptions, and issue comments MUST be in **English only**—even if the user chats in another language or references existing non-English files (such as `docs/proposal.md`).
+- **NEVER** invoke bare `python`, `python3`, or `pip`—always use `uv` (`uv run ...`) with the repository's pinned Python version in `.python-version` (`3.12`).
 - **NEVER** approve or merge a pull request—a human must review and merge via their own GitHub session.
 - **NEVER** push directly to `main` or force-push / rewrite history on shared branches.
 - **NEVER** edit `README.md`.

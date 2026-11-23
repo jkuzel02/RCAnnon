@@ -32,11 +32,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: '3.12'
-      - run: python -m pip install -r evaluation/prompt_checks/requirements.txt
-      - run: python -m unittest discover -s evaluation/prompt_checks -v
+          python-version-file: .python-version
+      - run: uv run --with-requirements evaluation/prompt_checks/requirements.txt python -m unittest discover -s evaluation/prompt_checks -v
 
   live:
     needs: offline
@@ -48,10 +47,9 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: '3.12'
-      - run: python -m pip install -r evaluation/prompt_checks/requirements.txt
+          python-version-file: .python-version
       - name: Evaluate prompts on e-INFRA CZ
         env:
           LLM_AI_EINFRA_API_KEY: ${{ secrets.LLM_AI_EINFRA_API_KEY }}
@@ -62,7 +60,7 @@ jobs:
           if [[ -n "$CASE_ID" ]]; then
             args+=(--case "$CASE_ID")
           fi
-          python -m evaluation.prompt_checks.run "${args[@]}"
+          uv run --with-requirements evaluation/prompt_checks/requirements.txt python -m evaluation.prompt_checks.run "${args[@]}"
       - name: Upload prompt results
         if: always()
         uses: actions/upload-artifact@v6
