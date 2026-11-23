@@ -4,6 +4,15 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.1](https://github.com/jkuzel02/RCAnnon/compare/0.1.0...0.1.1) (2026-11-23)
+
+
+### Documentation
+
+* add Getting Started guide with architecture visualization ([e6a4a23](https://github.com/jkuzel02/RCAnnon/commit/e6a4a23554735be235fa50280449151511afd59f))
+* add Getting Started guide with architecture visualization ([5d04e61](https://github.com/jkuzel02/RCAnnon/commit/5d04e61fca0d07a04d9b5d49bf86748b650a1db5)), closes [#41](https://github.com/jkuzel02/RCAnnon/issues/41)
+* add overview, architecture diagram, and doc links to README ([368f049](https://github.com/jkuzel02/RCAnnon/commit/368f04902bb651b492a05d27854a11992b9301af)), closes [#41](https://github.com/jkuzel02/RCAnnon/issues/41)
+
 ## [0.1.0] - Initial Baseline
 
 - Initial `0.1.0` development baseline implementing canonical `v1` contracts, e-INFRA CZ provider adapter, `base`/`optimal`/`mas` LangGraph workflows, read-only Kubernetes evidence collector, scoped FastAPI/OpenAI facade, and Docker Compose packaging.
