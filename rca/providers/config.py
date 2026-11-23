@@ -103,6 +103,7 @@ class ProviderConfig:
     temperature: float = DEFAULT_TEMPERATURE
     max_output_tokens: int | None = None
     max_context_chars: int | None = None
+    max_concurrency: int | None = None
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
     deadline_seconds: float = DEFAULT_DEADLINE_SECONDS
     max_retries: int = DEFAULT_MAX_RETRIES
@@ -129,6 +130,8 @@ class ProviderConfig:
             raise ValueError("max_output_tokens must be greater than zero.")
         if self.max_context_chars is not None and self.max_context_chars <= 0:
             raise ValueError("max_context_chars must be greater than zero.")
+        if self.max_concurrency is not None and self.max_concurrency <= 0:
+            raise ValueError("max_concurrency must be greater than zero.")
 
     @classmethod
     def from_env(
@@ -169,6 +172,10 @@ class ProviderConfig:
             merged.get("LLM_AI_EINFRA_MAX_CONTEXT_CHARS"),
             "LLM_AI_EINFRA_MAX_CONTEXT_CHARS",
         )
+        max_concurrency = _parse_optional_int(
+            merged.get("LLM_AI_EINFRA_MAX_CONCURRENCY"),
+            "LLM_AI_EINFRA_MAX_CONCURRENCY",
+        )
         timeout_seconds = _parse_float(
             merged.get("LLM_AI_EINFRA_TIMEOUT_SECONDS"),
             DEFAULT_TIMEOUT_SECONDS,
@@ -197,6 +204,7 @@ class ProviderConfig:
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             max_context_chars=max_context_chars,
+            max_concurrency=max_concurrency,
             timeout_seconds=timeout_seconds,
             deadline_seconds=deadline_seconds,
             max_retries=max_retries,

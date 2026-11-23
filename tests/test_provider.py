@@ -121,6 +121,7 @@ def test_config_from_env_aliases_secret_file_and_redaction(tmp_path: Path) -> No
             "LLM_AI_EINFRA_MAX_RETRIES": "2",
             "LLM_AI_EINFRA_MAX_OUTPUT_TOKENS": "1024",
             "LLM_AI_EINFRA_MAX_CONTEXT_CHARS": "20000",
+            "LLM_AI_EINFRA_MAX_CONCURRENCY": "1",
         }
     )
     assert cfg.api_key == SYNTHETIC_SECRET
@@ -128,11 +129,16 @@ def test_config_from_env_aliases_secret_file_and_redaction(tmp_path: Path) -> No
     assert cfg.max_retries == 2
     assert cfg.max_output_tokens == 1024
     assert cfg.max_context_chars == 20000
+    assert cfg.max_concurrency == 1
     assert SYNTHETIC_SECRET not in repr(cfg)
 
     alias_cfg = ProviderConfig.from_env({"EINFRA_AI_TOKEN": SYNTHETIC_SECRET})
     assert alias_cfg.api_key == SYNTHETIC_SECRET
     assert alias_cfg.max_retries == 0
+    assert alias_cfg.max_concurrency is None
+
+    with pytest.raises(ValueError, match="max_concurrency"):
+        ProviderConfig(api_key=SYNTHETIC_SECRET, max_concurrency=0)
 
 
 def test_successful_completion_with_usage_and_sync_adapter() -> None:
