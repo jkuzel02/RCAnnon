@@ -20,6 +20,10 @@ on:
         description: 'Incident ID (01–16); leave empty to evaluate all cases'
         type: string
         default: '01'
+      models:
+        description: 'Comma-separated e-INFRA model IDs (leave empty for LLM_AI_EINFRA_MODELS or default 3-model matrix)'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -37,12 +41,40 @@ jobs:
           python-version-file: .python-version
       - run: uv run --with-requirements evaluation/prompt_checks/requirements.txt python -m unittest discover -s evaluation/prompt_checks -v
 
-  live:
+  prepare-models:
     needs: offline
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.RCA_LIVE_PROMPT_CHECKS == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      models: ${{ steps.resolve.outputs.models }}
+    steps:
+      - id: resolve
+        env:
+          INPUT_MODELS: ${{ inputs.models }}
+          VAR_MODELS: ${{ vars.LLM_AI_EINFRA_MODELS }}
+          VAR_SINGLE_MODEL: ${{ vars.LLM_AI_EINFRA_MODEL }}
+        run: |
+          raw="${INPUT_MODELS:-${VAR_MODELS:-${VAR_SINGLE_MODEL:-deepseek-v4.1-flash,qwen3.8-27b,mistral-medium-3.5}}}"
+          models_json="$(jq -Rnc --arg raw "$raw" '$raw | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))')"
+          if [[ "$models_json" == "[]" ]]; then
+            echo "Resolved model matrix is empty." >&2
+            exit 1
+          fi
+          echo "Resolved models: ${models_json}"
+          echo "models=${models_json}" >> "$GITHUB_OUTPUT"
+
+  live:
+    needs: [offline, prepare-models]
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.RCA_LIVE_PROMPT_CHECKS == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency: rca-live-prompt-checks
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        model: ${{ fromJson(needs.prepare-models.outputs.models) }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -50,21 +82,28 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version-file: .python-version
-      - name: Evaluate prompts on e-INFRA CZ
+      - id: meta
+        env:
+          MODEL_ID: ${{ matrix.model }}
+        run: |
+          slug="$(printf '%s' "$MODEL_ID" | tr -c 'A-Za-z0-9._-' '-' | sed 's/^-*//;s/-*$//')"
+          echo "slug=${slug}" >> "$GITHUB_OUTPUT"
+      - name: Evaluate prompts on e-INFRA CZ (${{ matrix.model }})
         env:
           LLM_AI_EINFRA_API_KEY: ${{ secrets.LLM_AI_EINFRA_API_KEY }}
-          LLM_AI_EINFRA_MODEL: ${{ vars.LLM_AI_EINFRA_MODEL }}
+          LLM_AI_EINFRA_MODEL: ${{ matrix.model }}
           CASE_ID: ${{ inputs.case }}
+          MODEL_SLUG: ${{ steps.meta.outputs.slug }}
         run: |
-          args=(--output "${RUNNER_TEMP}/prompt-results.json")
+          args=(--output "${RUNNER_TEMP}/prompt-results-${MODEL_SLUG}.json")
           if [[ -n "$CASE_ID" ]]; then
             args+=(--case "$CASE_ID")
           fi
           uv run --with-requirements evaluation/prompt_checks/requirements.txt python -m evaluation.prompt_checks.run "${args[@]}"
-      - name: Upload prompt results
+      - name: Upload prompt results (${{ matrix.model }})
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: rca-prompt-results
-          path: ${{ runner.temp }}/prompt-results.json
+          name: rca-prompt-results-${{ steps.meta.outputs.slug }}
+          path: ${{ runner.temp }}/prompt-results-${{ steps.meta.outputs.slug }}.json
           if-no-files-found: ignore
