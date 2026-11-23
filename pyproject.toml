@@ -9,7 +9,9 @@ description = "Kubernetes root cause analysis workflows and benchmark harness."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.115,<1",
+    "httpx>=0.28,<1",
     "jsonschema>=4.23,<5",
+    "kubernetes>=31,<38",
     "langchain-openai>=0.3,<2",
     "langgraph>=0.4,<2",
     "openai>=1.60,<3",
@@ -20,7 +22,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28,<1",
     "pytest>=8.4,<10",
 ]
 
