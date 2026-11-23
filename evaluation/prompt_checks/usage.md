@@ -1,6 +1,6 @@
 # Testing RCA prompts
 
-Run the offline checks from the repository root with `uv` (Python `3.13` via `.python-version`):
+Run the offline checks from the repository root with `uv` (Python `3.12` via `.python-version`):
 
 ```sh
 uv run --with-requirements evaluation/prompt_checks/requirements.txt \

@@ -1,6 +1,6 @@
 # Prompt Checks (Local Quick Start)
 
-All Python runs in this repository use `uv` with Python `3.13` (`.python-version`).
+All Python runs in this repository use `uv` with Python `3.12` (`.python-version`).
 Live evaluations run in CI/CD (`.github/workflows/prompt-checks.yml`); use this
 directory only for quick local CLI verification (no output files written).
 

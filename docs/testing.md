@@ -1,6 +1,6 @@
 # Testing the LangGraph RCA workflows
 
-From the repository root, use `uv` (Python `3.13` via `.python-version`) and run:
+From the repository root, use `uv` (Python `3.12` via `.python-version`) and run:
 
 ```sh
 uv run --with-requirements tests/requirements.txt pytest tests -rx
