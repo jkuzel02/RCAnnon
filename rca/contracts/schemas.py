@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import json
+from typing import Any
+
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
+
 TEXT = {"type": "string", "pattern": r"\S"}
 
 
@@ -96,3 +102,28 @@ PROMPT_ALLOWLIST: frozenset[str] = frozenset(
         "mas/coordinator.md",
     }
 )
+
+
+def parse_and_validate_json(
+    raw: str,
+    schema: dict[str, Any],
+    *,
+    label: str = "response",
+) -> dict[str, Any]:
+    """Strictly parse a JSON object string and validate it against a JSON Schema."""
+    if not isinstance(raw, str):
+        raise ValueError(f"Invalid {label}: expected a JSON string.")
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            f"Invalid {label} JSON (line {error.lineno}, column {error.colno})."
+        ) from None
+    try:
+        Draft202012Validator(schema).validate(parsed)
+    except ValidationError as error:
+        location = ".".join(map(str, error.absolute_path)) or "root"
+        raise ValueError(
+            f"Invalid {label} schema at {location} ({error.validator})."
+        ) from None
+    return parsed
