@@ -1,0 +1,114 @@
+{
+  "schema_version": "v1",
+  "snapshot_id": "snap-synthetic-full-001",
+  "scope_hash": "17462f86f08bf197369c089436ea8326f0a13ac9b5d3cb9c3d4085afd231bd3f",
+  "source_type": "live",
+  "context_alias": "lab",
+  "namespaces": [
+    "demo"
+  ],
+  "collected_at": "2026-11-20T12:00:00Z",
+  "observed_at": "2026-11-20T11:59:45Z",
+  "context": {
+    "incident": "Checkout pods in namespace demo are restarting with OOMKilled.",
+    "time_window": {
+      "start": "2026-11-20T11:50:00Z",
+      "end": "2026-11-20T12:00:00Z"
+    },
+    "resources": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "metadata": {
+          "name": "checkout",
+          "namespace": "demo"
+        },
+        "spec": {
+          "replicas": 1,
+          "template": {
+            "spec": {
+              "containers": [
+                {
+                  "name": "web",
+                  "resources": {
+                    "requests": {
+                      "cpu": "25m",
+                      "memory": "32Mi"
+                    },
+                    "limits": {
+                      "cpu": "500m",
+                      "memory": "64Mi"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "reason": "OOMKilled",
+        "involved_object": "Pod/checkout-7d9b4f8c9-x2k9p",
+        "message": "Container web exceeded its 64Mi memory limit."
+      }
+    ],
+    "logs": [
+      {
+        "pod": "checkout-7d9b4f8c9-x2k9p",
+        "container": "web",
+        "stream": "previous",
+        "message": "retained_mib=62 near 64Mi cgroup limit"
+      }
+    ],
+    "metrics": [
+      {
+        "metric": "container_memory_working_set_bytes",
+        "pod": "checkout-7d9b4f8c9-x2k9p",
+        "container": "web",
+        "value": 67108864
+      }
+    ],
+    "checks": [
+      {
+        "target": "Service/checkout",
+        "kind": "http_readiness",
+        "status": "failed",
+        "details": "502 Bad Gateway during container restart"
+      }
+    ]
+  },
+  "coverage": {
+    "resources": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "events": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "logs": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "metrics": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "checks": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    }
+  }
+}

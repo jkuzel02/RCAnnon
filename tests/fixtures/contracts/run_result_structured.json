@@ -1,0 +1,69 @@
+{
+  "schema_version": "v1",
+  "request_id": "req-synthetic-mas-001",
+  "run_id": "run-synthetic-mas-001",
+  "variant": "mas",
+  "snapshot_id": "snap-synthetic-partial-001",
+  "snapshot_hash": "d3b45834c5f2992a223eb6e31fad3b82e1a25755c70a4876f18307d9ee5df445",
+  "status": "qualified",
+  "coverage": {
+    "resources": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "events": {
+      "status": "observed",
+      "count": 1,
+      "reason": null,
+      "truncated": false
+    },
+    "logs": {
+      "status": "truncated",
+      "count": 1,
+      "reason": "byte_limit_reached",
+      "truncated": true
+    },
+    "metrics": {
+      "status": "unreachable",
+      "count": 0,
+      "reason": "metrics_endpoint_unavailable",
+      "truncated": false
+    },
+    "checks": {
+      "status": "forbidden",
+      "count": 0,
+      "reason": "rbac_denied",
+      "truncated": false
+    }
+  },
+  "limitations": [
+    "checks: forbidden (rbac_denied)",
+    "logs: truncated (byte_limit_reached)",
+    "metrics: unreachable (metrics_endpoint_unavailable)"
+  ],
+  "result": {
+    "cause": "Deployment/checkout sets the web container memory limit to 64Mi while its working set reaches 62 MiB before runtime overhead.",
+    "causal_chain": "Memory pressure inside container web hits the 64Mi cgroup limit, triggering OOMKilled terminations and pod restarts.",
+    "supporting_evidence": [
+      "Deployment/checkout in namespace demo specifies limits.memory=64Mi for container web.",
+      "Event OOMKilled on Pod/checkout-7d9b4f8c9-x2k9p reports exit code 137.",
+      "Previous container log line records retained_mib=62 prior to termination."
+    ],
+    "remediation": "Increase the web container memory limit in Deployment/checkout to at least 256Mi.",
+    "recovery_check": "Pods in Deployment/checkout remain Running and Ready without new OOMKilled events for 2 minutes."
+  },
+  "error_code": null,
+  "error_message": null,
+  "usage": {
+    "duration_seconds": 3.85,
+    "logical_calls": 4,
+    "reported_input_tokens": 1620,
+    "reported_output_tokens": 480,
+    "reported_total_tokens": 2100,
+    "unknown_token_calls": 0
+  },
+  "created_at": "2026-11-20T12:05:01Z",
+  "completed_at": "2026-11-20T12:05:05Z"
+}
