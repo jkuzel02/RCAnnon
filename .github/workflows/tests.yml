@@ -47,4 +47,4 @@ jobs:
           python-version-file: .python-version
           enable-cache: true
       - if: steps.changes.outputs.changed == 'true'
-        run: uv run --with-requirements tests/requirements.txt pytest tests -rx
+        run: uv run pytest tests -rx
