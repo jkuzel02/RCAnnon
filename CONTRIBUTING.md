@@ -31,6 +31,12 @@ Working in this repo requires the `gh` tool installed. Check the presence of the
 
 5. **Cleanup.** After a PR is merged (or before starting unrelated work), switch back to `main`, run `git pull --ff-only`, and delete the merged local branch (`git branch -d <branch>`).
 
+## Language Policy (English Only)
+
+- All repository content MUST be written in **English**: documentation, Markdown files, prompts, code comments, test fixtures, commit messages, issues, and pull request descriptions.
+- AI coding agents MUST follow this rule even when the user communicates in another language or when referencing legacy non-English files (such as `docs/proposal.md`).
+- Pull requests modifying or adding Markdown files are automatically checked in CI (`.github/workflows/english-only-docs.yml`).
+
 ## Pull Request Approvals
 
 - Every PR MUST be reviewed by a human.
@@ -78,6 +84,7 @@ privileged credentials outside the agent environment.
 
 ## NEVER
 
+- Write non-English content in repository files, commit messages, issues, or pull requests.
 - Push to `main`, directly or by force.
 - Force-push or rewrite history on shared branches.
 - Commit secrets, tokens, or kubeconfig files.
