@@ -1,17 +1,16 @@
 # Testing the LangGraph RCA workflows
 
-From the repository root, use Python 3.12 and run:
+From the repository root, use `uv` (Python `3.13` via `.python-version`) and run:
 
 ```sh
-python -m pip install -r tests/requirements.txt
-python -m pytest tests -rx
+uv run --with-requirements tests/requirements.txt pytest tests -rx
 ```
 
 The workflow tests use fake completion responses and run without API
 credentials, Kubernetes, or LangGraph. They are expected failures while
 `rca.workflows` is absent. Once the module exists, the tests run normally
 and implementation errors fail the suite. During test-driven development use
-`python -m pytest tests --runxfail` to see the initial failing tests.
+`uv run --with-requirements tests/requirements.txt pytest tests --runxfail` to see the initial failing tests.
 
 ## Proposed interface
 

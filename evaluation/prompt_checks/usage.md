@@ -1,11 +1,13 @@
 # Testing RCA prompts
 
-Run the offline checks from the repository root with Python 3.12:
+Run the offline checks from the repository root with `uv` (Python `3.13` via `.python-version`):
 
 ```sh
-python -m pip install -r evaluation/prompt_checks/requirements.txt
-python -m unittest discover -s evaluation/prompt_checks -v
+uv run --with-requirements evaluation/prompt_checks/requirements.txt \
+  python -m unittest discover -s evaluation/prompt_checks -v
 ```
+
+For quick local live checks from inside `evaluation/prompt_checks/`, see [README.md](./README.md).
 
 These checks use the real cases and substitute deterministic model responses.
 GitHub Actions runs them on relevant pull requests and pushes to `main`.
@@ -26,11 +28,14 @@ requests. Check the
 [provider's benchmarking guidance](https://docs.cerit-sc.cz/en/docs/ai-as-a-service/chat-ai#shared-resources-and-benchmarking)
 before running the full benchmark.
 
-Locally, supply the API key via the environment and run from the repository
-root:
+Locally, supply the API key via `.env` (or the environment) and run from the
+repository root for CLI-only output (pass `--output <path>` only when you want
+to write a JSON file):
 
 ```sh
-python -m evaluation.prompt_checks.run --case 01 --output prompt-results.json
+uv run --env-file evaluation/prompt_checks/.env \
+  --with-requirements evaluation/prompt_checks/requirements.txt \
+  python -m evaluation.prompt_checks.run --case 01
 ```
 
 ## Interpreting results

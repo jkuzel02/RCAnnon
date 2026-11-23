@@ -13,7 +13,11 @@ from urllib.request import Request, urlopen
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
-from .schemas import CASE, RCA, REPORT_SCHEMAS
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from evaluation.prompt_checks.schemas import CASE, RCA, REPORT_SCHEMAS
+else:
+    from .schemas import CASE, RCA, REPORT_SCHEMAS
 
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -214,11 +218,16 @@ def evaluate_case(case_id, context, expectations, send):
     return results
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", action="append", help="Case ID to run; repeat to select more.")
-    parser.add_argument("--output", type=Path, default=Path("prompt-results.json"))
-    args = parser.parse_args()
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Optional path to write JSON results. Omit for CLI-only output.",
+    )
+    args = parser.parse_args(argv)
     api_key = os.environ.get("LLM_AI_EINFRA_API_KEY", "").strip()
     if not api_key:
         parser.error("Set LLM_AI_EINFRA_API_KEY to an e-INFRA API key.")
@@ -238,12 +247,14 @@ def main():
             case_results = evaluate_case(case_id, cases[case_id]["context"], expectations[case_id], send)
             results.extend(case_results)
             for result in case_results:
-                print(f"{case_id} {result['prompt']}: {result['status']}", flush=True)
+                detail = f" ({result['error']})" if "error" in result else ""
+                print(f"{case_id} {result['prompt']}: {result['status']}{detail}", flush=True)
     finally:
-        args.output.write_text(
-            json.dumps({"model": model, "results": results}, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
+        if args.output is not None:
+            args.output.write_text(
+                json.dumps({"model": model, "results": results}, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
 
     passed = sum(result["status"] == "passed" for result in results)
     print(f"{passed}/{len(results)} prompt checks passed.")

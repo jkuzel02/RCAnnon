@@ -22,22 +22,21 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: '3.12'
-      - run: python -m pip install -r .github/scripts/requirements.txt
+          python-version-file: .python-version
       - name: Run English-only checker unit tests
-        run: python -m unittest discover -s .github/scripts -v
+        run: uv run --with-requirements .github/scripts/requirements.txt python -m unittest discover -s .github/scripts -v
       - name: Check changed Markdown files on pull request
         if: github.event_name == 'pull_request'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: python .github/scripts/check_english_docs.py --exclude docs/proposal.md --diff-base "origin/${BASE_REF}"
+        run: uv run --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md --diff-base "origin/${BASE_REF}"
       - name: Check all English Markdown files on manual dispatch
         if: github.event_name == 'workflow_dispatch'
         run: |
           mapfile -t md_files < <(git ls-files '*.md')
-          python .github/scripts/check_english_docs.py \
+          uv run --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py \
             --exclude docs/proposal.md \
             --exclude test_results/RCAnnon-protokol.md \
             "${md_files[@]}"
