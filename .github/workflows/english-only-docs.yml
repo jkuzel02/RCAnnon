@@ -2,12 +2,6 @@ name: English-only docs
 
 on:
   pull_request:
-    paths:
-      - '**/*.md'
-      - '.github/scripts/check_english_docs.py'
-      - '.github/scripts/test_check_english_docs.py'
-      - '.github/scripts/requirements.txt'
-      - '.github/workflows/english-only-docs.yml'
   workflow_dispatch:
 
 permissions:
@@ -36,7 +30,4 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           mapfile -t md_files < <(git ls-files '*.md')
-          uv run --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py \
-            --exclude docs/proposal.md \
-            --exclude test_results/RCAnnon-protokol.md \
-            "${md_files[@]}"
+          uv run --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md "${md_files[@]}"

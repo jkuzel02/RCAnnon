@@ -2,12 +2,6 @@ name: Workflow tests
 
 on:
   pull_request:
-    paths:
-      - 'tests/**'
-      - 'rca/**'
-      - 'prompts/**'
-      - '.python-version'
-      - '.github/workflows/tests.yml'
   push:
     branches: [main]
     paths:
