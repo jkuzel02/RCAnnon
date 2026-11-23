@@ -8,21 +8,13 @@ from typing import Any
 
 from rca.contracts.provider import CompleteFn
 from rca.workflows.base import build_base_workflow
+from rca.workflows.mas import build_mas_workflow
 from rca.workflows.optimal import build_optimal_workflow
 
 WorkflowBuilder = Callable[..., Any]
 
 _REGISTRY_LOCK = threading.RLock()
 _REGISTRY: dict[str, WorkflowBuilder] = {}
-
-
-def _make_stub_builder(variant_name: str) -> WorkflowBuilder:
-    def _stub(*, complete: CompleteFn) -> Any:
-        del complete
-        raise NotImplementedError(f"Workflow variant {variant_name!r} is not implemented yet.")
-
-    _stub.__name__ = f"stub_{variant_name}_workflow"
-    return _stub
 
 
 def register_variant(
@@ -57,7 +49,7 @@ def list_variants() -> tuple[str, ...]:
         return tuple(sorted(_REGISTRY))
 
 
-def build_workflow(variant: str, *, complete: CompleteFn) -> Any:
+def build_workflow(variant: str, *, complete: CompleteFn, **kwargs: Any) -> Any:
     """Build and return a compiled workflow graph for the requested variant."""
     if not callable(complete):
         raise TypeError("complete must be a callable accepting (prompt_path, payload) -> str.")
@@ -66,12 +58,12 @@ def build_workflow(variant: str, *, complete: CompleteFn) -> Any:
     if builder is None:
         known = ", ".join(list_variants()) or "none"
         raise ValueError(f"Unknown workflow variant {variant!r}. Registered variants: {known}.")
-    return builder(complete=complete)
+    return builder(complete=complete, **kwargs)
 
 
 register_variant("base", build_base_workflow)
 register_variant("optimal", build_optimal_workflow)
-register_variant("mas", _make_stub_builder("mas"))
+register_variant("mas", build_mas_workflow)
 
 __all__ = [
     "WorkflowBuilder",

@@ -29,8 +29,33 @@ def test_default_variants_are_registered() -> None:
     optimal_graph = build_workflow("optimal", complete=Mock(return_value=valid_rca))
     assert optimal_graph.invoke({"context": {"incident": "test"}})["root-cause"]["cause"] == "c"
 
-    with pytest.raises(NotImplementedError):
-        build_workflow("mas", complete=Mock(return_value="ok"))
+    mas_responses = {
+        "mas/k8s-config-events.md": (
+            '{"agent":"k8s-config-events","anomalies":[],"suspicious_resources":[],'
+            '"significant_events":[],"preliminary_assessment":"none"}'
+        ),
+        "mas/logs-connectivity.md": (
+            '{"agent":"logs-connectivity","log_findings":[],"connectivity_findings":[],'
+            '"runtime_failure_mode":"unknown","preliminary_assessment":"none"}'
+        ),
+        "mas/metrics-telemetry.md": (
+            '{"agent":"metrics-telemetry","resource_findings":[],'
+            '"throttling_detected":false,"saturation_identified":null,'
+            '"preliminary_assessment":"none"}'
+        ),
+        "mas/coordinator.md": valid_rca,
+    }
+    mas_graph = build_workflow("mas", complete=lambda prompt, _payload: mas_responses[prompt])
+    mas_context = {
+        "incident": "test",
+        "time_window": None,
+        "resources": [],
+        "events": [],
+        "logs": [],
+        "metrics": [],
+        "checks": [],
+    }
+    assert mas_graph.invoke({"context": mas_context})["root-cause"]["cause"] == "c"
 
 
 def test_unknown_variant_is_rejected() -> None:
