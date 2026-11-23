@@ -10,6 +10,23 @@ from .provider import (
     ProviderResponseError,
     ProviderTimeoutError,
 )
+from .runtime import (
+    CANONICAL_EVIDENCE_SOURCES,
+    DEGRADED_COVERAGE_STATUSES,
+    CollectorFn,
+    CoverageStatus,
+    EvidenceSnapshot,
+    RunResult,
+    RunStatus,
+    RunUsage,
+    SnapshotSourceType,
+    SourceCoverage,
+    TargetSelector,
+    VariantName,
+    compute_scope_hash,
+    derive_default_coverage,
+    utc_now_iso,
+)
 from .schemas import (
     CASE,
     PROMPT_ALLOWLIST,
@@ -21,8 +38,13 @@ from .schemas import (
 )
 
 __all__ = [
+    "CANONICAL_EVIDENCE_SOURCES",
     "CASE",
+    "CollectorFn",
     "CompleteFn",
+    "CoverageStatus",
+    "DEGRADED_COVERAGE_STATUSES",
+    "EvidenceSnapshot",
     "PROMPT_ALLOWLIST",
     "PromptNotAllowedError",
     "ProviderAuthError",
@@ -33,7 +55,17 @@ __all__ = [
     "ProviderTimeoutError",
     "RCA",
     "REPORT_SCHEMAS",
+    "RunResult",
+    "RunStatus",
+    "RunUsage",
+    "SnapshotSourceType",
+    "SourceCoverage",
     "TEXT",
+    "TargetSelector",
+    "VariantName",
     "array",
+    "compute_scope_hash",
+    "derive_default_coverage",
     "object_with",
+    "utc_now_iso",
 ]
