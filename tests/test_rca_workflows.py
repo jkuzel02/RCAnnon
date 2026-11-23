@@ -43,7 +43,16 @@ def build_workflow(request):
         }:
             raise
         pytest.xfail("The LangGraph workflows have yet to be implemented.")
-    return module.build_workflow
+
+    def _build(variant, *, complete):
+        try:
+            return module.build_workflow(variant, complete=complete)
+        except NotImplementedError as error:
+            if request.config.getoption("runxfail"):
+                raise
+            pytest.xfail(str(error))
+
+    return _build
 
 
 @pytest.fixture
