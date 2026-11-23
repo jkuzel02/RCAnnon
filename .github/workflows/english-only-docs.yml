@@ -37,7 +37,4 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           mapfile -t md_files < <(git ls-files '*.md')
-          python .github/scripts/check_english_docs.py \
-            --exclude docs/proposal.md \
-            --exclude test_results/RCAnnon-protokol.md \
-            "${md_files[@]}"
+          python .github/scripts/check_english_docs.py --exclude docs/proposal.md "${md_files[@]}"
