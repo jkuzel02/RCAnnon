@@ -12,6 +12,8 @@ Need a cluster to inspect right away? Provision the built-in disposable **Kind +
 bash infrastructure/k8s/bootstrap.sh
 ```
 
+This also applies read-only RBAC and auto-generates `infrastructure/compose/kubeconfig/config` + `compose.override.yaml` so `docker compose up -d` connects straight to `kind-local` without manual kubeconfig edits.
+
 ## 2. Configure & Start RCAnnon
 
 Copy `.env.example` to `.env`, paste your `OPENAI_API_KEY` (or leave it empty to try offline mock mode), and start Docker Compose:
@@ -47,7 +49,7 @@ If you ran `bootstrap.sh`, Flux CD reconciles the following into your local `kin
 | **Flux CD (`flux-system`)** | GitOps reconciliation UI & controllers | `https://flux.localhost` |
 | **Traefik & cert-manager** | Local HTTPS Gateway for `*.localhost` | `kubectl --context kind-local get pods -A` |
 
-Delete the lab cluster anytime with `kind delete cluster --name local`.
+Delete the lab cluster anytime with `kind delete cluster --name local && rm -f compose.override.yaml infrastructure/compose/kubeconfig/config`.
 
 ### In Docker (`docker compose`)
 
@@ -71,6 +73,11 @@ Stop the stack anytime with `docker compose down` (add `-v` to wipe persisted vo
 | `rcannon-base` | Single-agent free-form | 1 | Narrative Markdown |
 | `rcannon-optimal` | Structured single-agent | 1 | 5-heading RCA report |
 | `rcannon-mas` | 3 parallel specialists -> coordinator | 4 | 5-heading RCA + claim cross-checks |
+
+## Troubleshooting
+
+- **`Live Kubernetes collector is not configured.`**: No cluster kubeconfig is wired into `api`. Run `bash infrastructure/k8s/bootstrap.sh` (for local Kind) or mount your own kubeconfig via `compose.kube.yaml`, then run `docker compose up -d`.
+- **`api_unreachable`**: Your mounted kubeconfig `server:` points to `127.0.0.1` (unreachable inside containers) or `api` is not on the cluster's Docker network. For local Kind, re-run `bash infrastructure/k8s/bootstrap.sh && docker compose up -d`—it configures `https://local-control-plane:6443` on the `kind` network automatically.
 
 ## Next Steps
 

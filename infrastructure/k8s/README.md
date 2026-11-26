@@ -223,6 +223,13 @@ Local manifest edits are not automatically deployed. A successful bootstrap
 does not mean every application is ready: Flux continues installing applications
 in dependency order afterward.
 
+The script also applies `rbac/rcannon-readonly.yaml`, mints a scoped read-only
+`ServiceAccount` token (`RCANNON_KUBE_TOKEN_DURATION`, default `168h`), and
+writes gitignored `infrastructure/compose/kubeconfig/config` plus
+`compose.override.yaml` (`https://local-control-plane:6443` over the `kind`
+Docker network) so `docker compose up -d` connects straight to `kind-local`. Re-run
+`bootstrap.sh` anytime to refresh the short-lived read-only token if it expires.
+
 If you bootstrapped an existing cluster before the directory move, rerun the
 bootstrap after updating your checkout. This reapplies the Flux source and
 root Kustomization with their new paths. When Flux reconciles the updated
@@ -305,10 +312,10 @@ state, downloaded container images, or certificates:
 
 ## Clean Up
 
-With Docker still running, permanently remove the local cluster:
+With Docker still running, permanently remove the local cluster and generated Compose override/kubeconfig:
 
 ```bash
-kind delete cluster --name local
+kind delete cluster --name local && rm -f compose.override.yaml infrastructure/compose/kubeconfig/config
 ```
 
 For the manually started Docker daemon in WSL, stop it with Ctrl+C in terminal 1
