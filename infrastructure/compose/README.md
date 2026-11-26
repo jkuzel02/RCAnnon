@@ -89,7 +89,7 @@ Instead of building locally, you can deploy the multi-architecture (`linux/amd64
 RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:latest docker compose up -d --no-build --wait
 ```
 
-Pin to an exact version tag (such as `0.1.4`), `:main` for rolling `main` builds, or an immutable manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification. <!-- x-release-please-version -->
+Pin to an exact version tag (such as `0.1.5`), `:main` for rolling `main` builds, or an immutable manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification. <!-- x-release-please-version -->
 
 ## Enabling Live OpenAI-Compatible API Inference
 

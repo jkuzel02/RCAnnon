@@ -77,6 +77,6 @@ Stop the stack anytime with `docker compose down` (add `-v` to wipe persisted vo
 | Need | Where to Go |
 | --- | --- |
 | Connect `api` to your Kind or remote cluster (`compose.kube.yaml`) | [Compose Operations](../infrastructure/compose/README.md) |
-| Run with prebuilt GHCR images (`0.1.4`, `latest`) or inside a management K8s cluster | [Container Image](../docs/container-image.md) | <!-- x-release-please-version -->
+| Run with prebuilt GHCR images (`0.1.5`, `latest`) or inside a management K8s cluster | [Container Image](../docs/container-image.md) | <!-- x-release-please-version -->
 | Understand trust boundaries, redaction, and `EvidenceSnapshot/v1` contracts | [Architecture](../docs/architecture.md) |
 | Build from source, run offline tests, or contribute | [Contributing](../CONTRIBUTING.md) |
