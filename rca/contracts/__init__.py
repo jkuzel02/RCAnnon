@@ -29,12 +29,14 @@ from .runtime import (
 )
 from .schemas import (
     CASE,
+    OBSERVATION_FIELDS,
     PROMPT_ALLOWLIST,
     RCA,
     REPORT_SCHEMAS,
     TEXT,
     array,
     object_with,
+    validate_observations,
 )
 
 __all__ = [
@@ -45,6 +47,7 @@ __all__ = [
     "CoverageStatus",
     "DEGRADED_COVERAGE_STATUSES",
     "EvidenceSnapshot",
+    "OBSERVATION_FIELDS",
     "PROMPT_ALLOWLIST",
     "PromptNotAllowedError",
     "ProviderAuthError",
@@ -68,4 +71,5 @@ __all__ = [
     "derive_default_coverage",
     "object_with",
     "utc_now_iso",
+    "validate_observations",
 ]
