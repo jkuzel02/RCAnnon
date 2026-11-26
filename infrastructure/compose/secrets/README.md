@@ -8,7 +8,7 @@ This directory holds local runtime secret files mounted into Docker Compose cont
 
 - `ui_bearer_token.secret`: Shared bearer token used by the `ui` service (LibreChat custom `RCAnnon` endpoint) when calling `api` (`/v1/*`). Must be non-empty and distinct from `operator_bearer_token.secret`.
 - `operator_bearer_token.secret`: Separate bearer token authorizing `/api/v1/*` operator routes on `api`. Never mount this file into `ui`.
-- `llm_api_key.secret` (required only when enabling `infrastructure/compose/compose.einfra.yaml`): API key for e-INFRA CZ or a compatible OpenAI endpoint, mounted only into `api`.
+- `llm_api_key.secret` (required only when enabling `infrastructure/compose/compose.openai.yaml`): API key for OpenAI or a compatible Chat Completions endpoint, mounted only into `api`.
 
 ### LibreChat Authentication and Bootstrap
 

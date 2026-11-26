@@ -33,7 +33,7 @@ flowchart LR
     A --> S[("Bounded redacted snapshots and run metadata")]
     C --> S
     S --> G["LangGraph base, optimal, MAS"]
-    G -->|Shared Chat Completions adapter| L["e-INFRA CZ or configured provider"]
+    G -->|Shared Chat Completions adapter| L["OpenAI-compatible API"]
     G --> A
     A -. OTLP .-> O["OpenTelemetry Collector"]
     G -. OTLP .-> O
@@ -69,7 +69,7 @@ Control-plane reads can still surface rollout conditions, `FailedScheduling` and
 | --- | --- |
 | Runtime | Python `3.12` managed via `uv` and `.python-version`, matching CI. Use LangGraph `StateGraph` and FastAPI. |
 | Collector | Official Kubernetes Python client (`ApiClient` per context) scoped to read-only cluster access. |
-| Provider | Shared OpenAI-compatible Chat Completions adapter (`langchain-openai` / `openai`) targeting e-INFRA CZ or a configured compatible endpoint. |
+| Provider | Shared OpenAI-compatible Chat Completions adapter (`langchain-openai` / `openai`) targeting OpenAI or any compatible endpoint. |
 | Frontend | LibreChat `v0.8.9` (MIT) selected over Open WebUI (licensing/operational tradeoffs) and Hugging Face Chat UI (deferred). All UIs integrate via the same OpenAI-compatible HTTP facade rather than native LangGraph execution. |
 | Telemetry | OpenTelemetry Python SDK, OpenTelemetry Collector, Tempo, Prometheus, and Grafana deployed outside the target cluster. Prefer manual graph-node spans over a second automated LangChain tracing pipeline to avoid duplicate or unsanitized telemetry. |
 | Persistence | LibreChat owns MongoDB for user accounts and conversation history. Single-instance FastAPI runtime stores bounded redacted snapshot and run metadata in SQLite. |

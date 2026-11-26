@@ -16,7 +16,7 @@ on:
         type: string
         default: '01'
       models:
-        description: 'Comma-separated e-INFRA model IDs (leave empty for LLM_AI_EINFRA_MODELS or default 3-model matrix)'
+        description: 'Comma-separated model IDs (leave empty for OPENAI_MODELS, OPENAI_MODEL, or default gpt-4o-mini)'
         type: string
         default: ''
 
@@ -66,10 +66,10 @@ jobs:
       - id: resolve
         env:
           INPUT_MODELS: ${{ inputs.models }}
-          VAR_MODELS: ${{ vars.LLM_AI_EINFRA_MODELS }}
-          VAR_SINGLE_MODEL: ${{ vars.LLM_AI_EINFRA_MODEL }}
+          VAR_OPENAI_MODELS: ${{ vars.OPENAI_MODELS }}
+          VAR_OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
         run: |
-          raw="${INPUT_MODELS:-${VAR_MODELS:-${VAR_SINGLE_MODEL:-deepseek-v4.1-flash,qwen3.8-27b,mistral-medium-3.5}}}"
+          raw="${INPUT_MODELS:-${VAR_OPENAI_MODELS:-${VAR_OPENAI_MODEL:-gpt-4o-mini}}}"
           models_json="$(jq -Rnc --arg raw "$raw" '$raw | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))')"
           if [[ "$models_json" == "[]" ]]; then
             echo "Resolved model matrix is empty." >&2
@@ -103,10 +103,11 @@ jobs:
         run: |
           slug="$(printf '%s' "$MODEL_ID" | tr -c 'A-Za-z0-9._-' '-' | sed 's/^-*//;s/-*$//')"
           echo "slug=${slug}" >> "$GITHUB_OUTPUT"
-      - name: Evaluate prompts on e-INFRA CZ (${{ matrix.model }})
+      - name: Evaluate prompts (${{ matrix.model }})
         env:
-          LLM_AI_EINFRA_API_KEY: ${{ secrets.LLM_AI_EINFRA_API_KEY }}
-          LLM_AI_EINFRA_MODEL: ${{ matrix.model }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          OPENAI_MODEL: ${{ matrix.model }}
           CASE_ID: ${{ inputs.case }}
           MODEL_SLUG: ${{ steps.meta.outputs.slug }}
         run: |

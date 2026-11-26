@@ -506,7 +506,7 @@ def test_delayed_provider_timeout_and_cancellation_emit_single_terminal_status(
     def slow_timeout_complete(prompt_path: str, _payload: dict[str, Any]) -> str:
         if prompt_path == "mas/metrics-telemetry.md":
             time.sleep(0.02)
-            raise ProviderTimeoutError(f"e-infra timed out with {SECRET_SENTINEL}")
+            raise ProviderTimeoutError(f"provider timed out with {SECRET_SENTINEL}")
         agent = prompt_path.removeprefix("mas/").removesuffix(".md")
         if agent in _valid_sparse_reports():
             return json.dumps(_valid_sparse_reports()[agent])

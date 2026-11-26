@@ -18,9 +18,9 @@ from rca.contracts.provider import CompleteFn, PromptNotAllowedError
 from rca.contracts.runtime import CollectorFn
 from rca.contracts.schemas import PROMPT_ALLOWLIST
 from rca.evidence import KubernetesEvidenceCollector, TargetClusterConfig, build_collector_fn
-from rca.providers import EInfraProvider, ProviderConfig
+from rca.providers import OpenAIProvider, ProviderConfig
 
-_VALID_PROVIDER_MODES = frozenset({"einfra", "mock"})
+_VALID_PROVIDER_MODES = frozenset({"openai", "mock"})
 
 
 def _read_optional_secret(
@@ -97,23 +97,23 @@ def mock_complete(prompt_path: str, payload: Mapping[str, Any]) -> str:
             "cause": "Mock offline diagnosis completed without live LLM inference.",
             "causal_chain": "Evidence snapshot passed validation and ran through the offline mock provider.",
             "supporting_evidence": ["Mock provider mode (RCANNON_PROVIDER_MODE=mock)"],
-            "remediation": "Switch to RCANNON_PROVIDER_MODE=einfra with a valid API key for live analysis.",
+            "remediation": "Switch to RCANNON_PROVIDER_MODE=openai with a valid OpenAI API key for live analysis.",
             "recovery_check": "Confirm service /readyz returns 200 and live completions succeed.",
         }
     )
 
 
 def _resolve_provider(env: Mapping[str, str]) -> tuple[str, CompleteFn, tuple[str, ...]]:
-    mode = env.get("RCANNON_PROVIDER_MODE", "einfra").strip().lower() or "einfra"
+    mode = env.get("RCANNON_PROVIDER_MODE", "openai").strip().lower() or "openai"
     if mode not in _VALID_PROVIDER_MODES:
         raise ValueError(
-            f"Unsupported RCANNON_PROVIDER_MODE {mode!r}. Expected 'einfra' or 'mock'."
+            f"Unsupported RCANNON_PROVIDER_MODE {mode!r}. Expected 'openai' or 'mock'."
         )
     if mode == "mock":
         return mode, mock_complete, ()
 
     provider_cfg = ProviderConfig.from_env(env)
-    provider = EInfraProvider(provider_cfg)
+    provider = OpenAIProvider(provider_cfg)
     return mode, provider.complete, (provider_cfg.api_key,)
 
 

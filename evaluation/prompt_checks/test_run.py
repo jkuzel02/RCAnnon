@@ -179,8 +179,10 @@ class PromptRunnerTest(TestCase):
     def test_main_cli_only_writes_no_file_by_default(self):
         case = self.cases["01"]
         expected = case["root-cause"]
+        calls = []
 
-        def fake_complete(model, api_key, prompt, payload):
+        def fake_complete(model, api_key, prompt, payload, *, endpoint=ENDPOINT):
+            calls.append((model, api_key, endpoint))
             if prompt == self.prompts["base.md"]:
                 return expected["cause"], None
             for specialist, report in REPORTS.items():
@@ -190,7 +192,7 @@ class PromptRunnerTest(TestCase):
 
         with (
             TemporaryDirectory() as tmpdir,
-            patch.dict("os.environ", {"LLM_AI_EINFRA_API_KEY": "fake-key"}, clear=True),
+            patch.dict("os.environ", {"OPENAI_API_KEY": "fake-openai-key"}, clear=True),
             patch("evaluation.prompt_checks.run.complete", side_effect=fake_complete),
             patch("sys.stdout", new_callable=StringIO) as stdout,
         ):
@@ -198,8 +200,50 @@ class PromptRunnerTest(TestCase):
             self.assertEqual(status, 0)
             self.assertIn("6/6 prompt checks passed.", stdout.getvalue())
             self.assertEqual(list(Path(tmpdir).iterdir()), [])
+            self.assertTrue(
+                all(
+                    call == ("gpt-4o-mini", "fake-openai-key", "https://api.openai.com/v1/chat/completions")
+                    for call in calls
+                )
+            )
 
             output_file = Path(tmpdir) / "results.json"
             status_with_out = main(["--case", "01", "--output", str(output_file)])
             self.assertEqual(status_with_out, 0)
             self.assertTrue(output_file.is_file())
+
+    def test_main_supports_custom_openai_endpoint_and_model(self):
+        case = self.cases["01"]
+        expected = case["root-cause"]
+        calls = []
+
+        def fake_complete(model, api_key, prompt, payload, *, endpoint=ENDPOINT):
+            calls.append((model, api_key, endpoint))
+            if prompt == self.prompts["base.md"]:
+                return expected["cause"], None
+            for specialist, report in REPORTS.items():
+                if prompt == self.prompts[f"mas/{specialist}.md"]:
+                    return json.dumps(report), None
+            return json.dumps(expected), None
+
+        with (
+            patch.dict(
+                "os.environ",
+                {
+                    "OPENAI_API_KEY": "fake-custom-key",
+                    "OPENAI_BASE_URL": "http://127.0.0.1:11434/v1/",
+                    "OPENAI_MODEL": "llama3.1:8b",
+                },
+                clear=True,
+            ),
+            patch("evaluation.prompt_checks.run.complete", side_effect=fake_complete),
+            patch("sys.stdout", new_callable=StringIO),
+        ):
+            self.assertEqual(main(["--case", "01"]), 0)
+
+        self.assertTrue(
+            all(
+                call == ("llama3.1:8b", "fake-custom-key", "http://127.0.0.1:11434/v1/chat/completions")
+                for call in calls
+            )
+        )

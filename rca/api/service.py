@@ -36,7 +36,7 @@ from rca.contracts.runtime import (
     derive_default_coverage,
     utc_now_iso,
 )
-from rca.providers.einfra import EInfraProvider
+from rca.providers.openai import OpenAIProvider
 from rca.workflows import build_workflow
 from rca.workflows.mas_validation import AgentExecutionTrace, MasTracer, _emit_trace
 
@@ -91,7 +91,7 @@ class RcaApiService:
         )
         secrets = [*config.ui_tokens, *config.operator_tokens, *config.extra_redaction_secrets]
         bound_self = getattr(complete, "__self__", None)
-        if isinstance(bound_self, EInfraProvider):
+        if isinstance(bound_self, OpenAIProvider):
             secrets.append(bound_self.config.api_key)
         self._secrets: tuple[str, ...] = tuple(s for s in secrets if s)
 
@@ -372,7 +372,7 @@ class RcaApiService:
                 raise RunInterruptedError("Run cancelled.")
 
             bound_self = getattr(self._complete, "__self__", None)
-            if isinstance(bound_self, EInfraProvider):
+            if isinstance(bound_self, OpenAIProvider):
                 resp = bound_self.complete_response(prompt_path, payload)
                 text = resp.text
                 with usage_lock:

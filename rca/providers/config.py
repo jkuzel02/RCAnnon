@@ -1,4 +1,4 @@
-"""Configuration loading for the shared e-INFRA Chat Completions provider."""
+"""Configuration loading for the shared OpenAI-compatible Chat Completions provider."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-DEFAULT_BASE_URL = "https://llm.ai.e-infra.cz/v1"
-DEFAULT_MODEL = "deepseek-v4.1-flash"
+DEFAULT_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_MODEL = "gpt-4o-mini"
 DEFAULT_TEMPERATURE = 0.0
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_DEADLINE_SECONDS = 90.0
@@ -74,28 +74,23 @@ def _load_env_file(path: Path) -> dict[str, str]:
 
 
 def _resolve_api_key(env: Mapping[str, str]) -> str:
-    for key_var in ("LLM_AI_EINFRA_API_KEY", "EINFRA_AI_TOKEN"):
-        value = env.get(key_var, "").strip()
-        if value:
-            return value
-    for file_var in ("LLM_AI_EINFRA_API_KEY_FILE", "EINFRA_AI_TOKEN_FILE"):
-        raw_path = env.get(file_var, "").strip()
-        if raw_path:
-            secret_path = Path(raw_path)
-            if not secret_path.is_file():
-                raise ValueError(f"Secret file referenced by {file_var} does not exist.")
-            value = secret_path.read_text(encoding="utf-8").strip()
-            if value:
-                return value
-    raise ValueError(
-        "Missing e-INFRA API key. Set LLM_AI_EINFRA_API_KEY, EINFRA_AI_TOKEN, "
-        "or LLM_AI_EINFRA_API_KEY_FILE."
-    )
+    value = env.get("OPENAI_API_KEY", "").strip()
+    if value:
+        return value
+    raw_path = env.get("OPENAI_API_KEY_FILE", "").strip()
+    if raw_path:
+        secret_path = Path(raw_path)
+        if not secret_path.is_file():
+            raise ValueError("Secret file referenced by OPENAI_API_KEY_FILE does not exist.")
+        file_value = secret_path.read_text(encoding="utf-8").strip()
+        if file_value:
+            return file_value
+    raise ValueError("Missing OpenAI API key. Set OPENAI_API_KEY or OPENAI_API_KEY_FILE.")
 
 
 @dataclass(frozen=True)
 class ProviderConfig:
-    """Validated runtime configuration for the e-INFRA Chat Completions adapter."""
+    """Validated runtime configuration for the OpenAI-compatible Chat Completions adapter."""
 
     api_key: str = field(repr=False)
     base_url: str = DEFAULT_BASE_URL
@@ -148,53 +143,45 @@ class ProviderConfig:
         merged.update(source)
 
         api_key = _resolve_api_key(merged)
-        base_url = (
-            merged.get("LLM_AI_EINFRA_BASE_URL", "").strip()
-            or merged.get("EINFRA_AI_BASE_URL", "").strip()
-            or DEFAULT_BASE_URL
-        ).rstrip("/")
-        model = (
-            merged.get("LLM_AI_EINFRA_MODEL", "").strip()
-            or merged.get("EINFRA_AI_MODEL", "").strip()
-            or DEFAULT_MODEL
-        )
+        base_url = (merged.get("OPENAI_BASE_URL", "").strip() or DEFAULT_BASE_URL).rstrip("/")
+        model = merged.get("OPENAI_MODEL", "").strip() or DEFAULT_MODEL
         temperature = _parse_float(
-            merged.get("LLM_AI_EINFRA_TEMPERATURE"),
+            merged.get("OPENAI_TEMPERATURE"),
             DEFAULT_TEMPERATURE,
-            "LLM_AI_EINFRA_TEMPERATURE",
+            "OPENAI_TEMPERATURE",
             allow_zero=True,
         )
         max_output_tokens = _parse_optional_int(
-            merged.get("LLM_AI_EINFRA_MAX_OUTPUT_TOKENS"),
-            "LLM_AI_EINFRA_MAX_OUTPUT_TOKENS",
+            merged.get("OPENAI_MAX_OUTPUT_TOKENS"),
+            "OPENAI_MAX_OUTPUT_TOKENS",
         )
         max_context_chars = _parse_optional_int(
-            merged.get("LLM_AI_EINFRA_MAX_CONTEXT_CHARS"),
-            "LLM_AI_EINFRA_MAX_CONTEXT_CHARS",
+            merged.get("OPENAI_MAX_CONTEXT_CHARS"),
+            "OPENAI_MAX_CONTEXT_CHARS",
         )
         max_concurrency = _parse_optional_int(
-            merged.get("LLM_AI_EINFRA_MAX_CONCURRENCY"),
-            "LLM_AI_EINFRA_MAX_CONCURRENCY",
+            merged.get("OPENAI_MAX_CONCURRENCY"),
+            "OPENAI_MAX_CONCURRENCY",
         )
         timeout_seconds = _parse_float(
-            merged.get("LLM_AI_EINFRA_TIMEOUT_SECONDS"),
+            merged.get("OPENAI_TIMEOUT_SECONDS"),
             DEFAULT_TIMEOUT_SECONDS,
-            "LLM_AI_EINFRA_TIMEOUT_SECONDS",
+            "OPENAI_TIMEOUT_SECONDS",
         )
         deadline_seconds = _parse_float(
-            merged.get("LLM_AI_EINFRA_DEADLINE_SECONDS"),
+            merged.get("OPENAI_DEADLINE_SECONDS"),
             DEFAULT_DEADLINE_SECONDS,
-            "LLM_AI_EINFRA_DEADLINE_SECONDS",
+            "OPENAI_DEADLINE_SECONDS",
         )
         max_retries = _parse_non_negative_int(
-            merged.get("LLM_AI_EINFRA_MAX_RETRIES"),
+            merged.get("OPENAI_MAX_RETRIES"),
             DEFAULT_MAX_RETRIES,
-            "LLM_AI_EINFRA_MAX_RETRIES",
+            "OPENAI_MAX_RETRIES",
         )
         retry_backoff_seconds = _parse_float(
-            merged.get("LLM_AI_EINFRA_RETRY_BACKOFF_SECONDS"),
+            merged.get("OPENAI_RETRY_BACKOFF_SECONDS"),
             DEFAULT_RETRY_BACKOFF_SECONDS,
-            "LLM_AI_EINFRA_RETRY_BACKOFF_SECONDS",
+            "OPENAI_RETRY_BACKOFF_SECONDS",
             allow_zero=True,
         )
         return cls(

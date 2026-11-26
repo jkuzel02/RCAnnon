@@ -178,7 +178,7 @@ RCAnnon/
 │   ├── api/         # Scoped FastAPI OpenAI facade, SQLite storage, markdown rendering
 │   ├── contracts/   # Shared v1 Pydantic/JSON schemas and workflow contracts
 │   ├── evidence/    # Read-only K8s API collector, secret redaction, bundle hashing
-│   ├── providers/   # Shared e-INFRA CZ OpenAI-compatible completion adapter
+│   ├── providers/   # Shared OpenAI-compatible Chat Completions adapter
 │   └── workflows/   # base, optimal, parallel mas workflows & MAS evidence validation
 ├── prompts/         # Locked versioned system prompts (base.md, optimal.md, mas/*.md)
 ├── scenarios/       # 16 reproducible Kubernetes incident specs (01..16) with app/ + rca.json
@@ -194,7 +194,7 @@ RCAnnon/
 | [docs/testing.md](./docs/testing.md) | Focused `pytest` commands, workflow contract, and MAS claim-validation guarantees |
 | [docs/scenarios.md](./docs/scenarios.md) | Sixteen Kubernetes incident scenario specs and evaluator format |
 | [infrastructure/k8s/README.md](./infrastructure/k8s/README.md) | Kind + Flux CD target lab bootstrap, Grafana/Flux access, and cleanup |
-| [evaluation/prompt_checks/README.md](./evaluation/prompt_checks/README.md) | Local live LLM prompt smoke checks against e-INFRA CZ |
+| [evaluation/prompt_checks/README.md](./evaluation/prompt_checks/README.md) | Local live LLM prompt smoke checks against an OpenAI-compatible API |
 | [SECURITY.md](./SECURITY.md) | Isolation model, container posture verification, and vulnerability reporting |
 | [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Community standards and reporting guidelines |
 | [CHANGELOG.md](./CHANGELOG.md) | Automated Conventional Commits release history |

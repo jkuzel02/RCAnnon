@@ -7,9 +7,10 @@ directory only for quick local CLI verification (no output files written).
 ## 1. Create `.env` in this directory (gitignored)
 
 ```dotenv
-LLM_AI_EINFRA_API_KEY=your-e-infra-api-key
-# Optional (defaults to deepseek-v4.1-flash):
-# LLM_AI_EINFRA_MODEL=deepseek-v4.1-flash
+OPENAI_API_KEY=your-openai-api-key
+# Optional overrides (defaults to https://api.openai.com/v1 and gpt-4o-mini):
+# OPENAI_BASE_URL=https://api.openai.com/v1
+# OPENAI_MODEL=gpt-4o-mini
 ```
 
 ## 2. Run checks from this directory
