@@ -17,7 +17,7 @@ Include the matching `Co-authored-by:` trailer on its own line in the commit foo
 
 | Coding Agent | Required `Co-authored-by` Commit Trailer |
 | --- | --- |
-| Antigravity | `Co-authored-by: Antigravity <noreply@google.com>` |
+| Antigravity | `Co-authored-by: Antigravity <antigravity@google.com>` |
 | Gemini Code Assist | `Co-authored-by: gemini-code-assist[bot] <176961590+gemini-code-assist[bot]@users.noreply.github.com>` |
 | Claude | `Co-authored-by: Claude <noreply@anthropic.com>` |
 | Codex | `Co-authored-by: Codex <267193182+codex@users.noreply.github.com>` |
