@@ -9,13 +9,25 @@ on:
       - 'uv.lock'
       - '.python-version'
       - 'rca/**'
-      - 'prompts/**'
+      - 'prompts/base.md'
+      - 'prompts/optimal.md'
+      - 'prompts/mas/*.md'
+      - '!prompts/**/README.md'
       - '.github/workflows/ghcr.yml'
   push:
     branches: [main]
-    tags:
-      - '[0-9]*.[0-9]*.[0-9]*'
-      - 'v[0-9]*.[0-9]*.[0-9]*'
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.python-version'
+      - 'rca/**'
+      - 'prompts/base.md'
+      - 'prompts/optimal.md'
+      - 'prompts/mas/*.md'
+      - '!prompts/**/README.md'
+      - '.github/workflows/ghcr.yml'
   workflow_call:
     inputs:
       tag_name:
