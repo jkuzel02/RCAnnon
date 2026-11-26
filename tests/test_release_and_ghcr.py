@@ -43,7 +43,42 @@ def test_ghcr_workflow_builds_safely_on_pr_and_publishes_attested_multiarch_imag
     assert "workflow_call" in triggers
     assert "workflow_dispatch" in triggers
     assert "main" in triggers["push"]["branches"]
-    assert triggers["push"]["tags"]
+    assert "tags" not in triggers["push"]
+
+    expected_paths = [
+        "Dockerfile",
+        ".dockerignore",
+        "pyproject.toml",
+        "uv.lock",
+        ".python-version",
+        "rca/**",
+        "prompts/base.md",
+        "prompts/optimal.md",
+        "prompts/mas/*.md",
+        "!prompts/**/README.md",
+        ".github/workflows/ghcr.yml",
+    ]
+    assert triggers["pull_request"]["paths"] == expected_paths
+    assert triggers["push"]["paths"] == expected_paths
+    for excluded_path in (
+        "docs/**",
+        "README.md",
+        "tests/**",
+        "scenarios/**",
+        "evaluation/**",
+        "infrastructure/**",
+        "compose.yaml",
+    ):
+        assert excluded_path not in triggers["push"]["paths"]
+
+    tag_wf = _load_workflow(REPO_ROOT / ".github" / "workflows" / "ghcr-release-tag.yml")
+    assert tag_wf["on"]["push"]["tags"] == [
+        "[0-9]*.[0-9]*.[0-9]*",
+        "v[0-9]*.[0-9]*.[0-9]*",
+    ]
+    tag_job = tag_wf["jobs"]["publish-tag-image"]
+    assert tag_job["uses"] == "./.github/workflows/ghcr.yml"
+    assert tag_job["with"]["tag_name"] == "${{ github.ref_name }}"
 
     assert wf["permissions"] == {"contents": "read"}
     job = wf["jobs"]["container"]

@@ -1,0 +1,21 @@
+name: Container image release (SemVer tag)
+
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-tag-image:
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/ghcr.yml
+    with:
+      tag_name: ${{ github.ref_name }}
