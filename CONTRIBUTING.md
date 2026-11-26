@@ -103,3 +103,97 @@ privileged credentials outside the agent environment.
 - Commit secrets, tokens, or kubeconfig files.
 - Edit the `README.md` file. If you have made any change, undo it NOW.
 - Merge or approve a PR.
+
+---
+
+## Local Development Quick Start
+
+### Developer Prerequisites
+
+- **`uv`** ([docs.astral.sh/uv](https://docs.astral.sh/uv/)) — required for all Python execution (`3.12` is pinned automatically via `.python-version`).
+- **GitHub CLI (`gh`)** — required for issue and pull request workflows ([cli.github.com](https://cli.github.com/)).
+- **Docker Engine / Docker Desktop** with Compose v2 — required for local container builds and Compose integration checks.
+- **Optional Kubernetes lab tools:** `kind`, `kubectl`, and `helm` for provisioning the local 16-scenario cluster.
+
+### 3-Minute Setup & Offline Test Loop
+
+```sh
+git clone https://github.com/jkuzel02/RCAnnon.git
+cd RCAnnon
+uv sync
+uv run --no-sync pytest tests -rx
+```
+
+All `120+` offline unit, contract, evidence, API, Compose, and LibreChat tests run in seconds without live LLM credentials or a cluster.
+
+To build and verify the Compose stack from local source:
+
+```sh
+./infrastructure/compose/scripts/init-dev-secrets.sh
+docker compose config --quiet
+docker compose up -d --build --wait
+docker compose --profile bootstrap run --rm ui-bootstrap
+```
+
+Before pushing Markdown edits, verify English-only docs compliance:
+
+```sh
+uv run --no-project --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md docs/*.md CONTRIBUTING.md infrastructure/compose/README.md infrastructure/compose/secrets/README.md
+```
+
+## Built-In 16-Scenario Kubernetes Lab
+
+Provision a disposable local **Kind + Flux CD + Prometheus + Grafana** cluster across **16 realistic Kubernetes failure modes** (`scenarios/01`–`scenarios/16`):
+
+```sh
+./infrastructure/k8s/bootstrap.sh
+```
+
+| Domain | Included Scenarios |
+| --- | --- |
+| **Resources & Scheduling** | Memory limit below working set (`01`), steady-load CPU throttling (`02`), unschedulable CPU requests (`12`), cascading backend OOM -> frontend outage (`15`) |
+| **Config & Secrets** | Invalid application config (`03`), nonexistent image tag (`04`), missing `Secret` key (`05`) |
+| **Probes & Health** | Slow-start killed by liveness probe (`06`), readiness probe pointing to wrong HTTP path (`07`) |
+| **Networking, Storage & RBAC** | Service selector mismatch (`08`), wrong Service target port (`09`), DNS mismatch (`10`), restrictive `NetworkPolicy` (`11`), missing `StorageClass` PVC (`13`), missing `ServiceAccount` RBAC (`14`), broken CNI pod sandboxes (`16`) |
+
+Clean up anytime with `kind delete cluster --name local`. See [infrastructure/k8s/README.md](./infrastructure/k8s/README.md) and [docs/scenarios.md](./docs/scenarios.md) for lab details, fault-injection rules, and `rca.json` format.
+
+## Project Status & Open Roadmap
+
+- [x] **Core Architecture & `v1` Contracts** — Evidence snapshots, workflow contracts, golden fixtures ([docs/architecture.md](./docs/architecture.md))
+- [x] **Read-Only Collector & Sanitized Bundles** — K8s API adapter, RBAC manifests, credential redaction (`rca/evidence/`)
+- [x] **LangGraph Workflows & MAS Validation** — `base`, `optimal`, `mas`, and claim verification (`rca/workflows/`)
+- [x] **FastAPI Facade, Multi-Arch Container & LibreChat UI** — OpenAI-compatible API, Docker Compose stack, GHCR releases with SLSA attestations (`rca/api/`, `compose.yaml`)
+- [ ] **Privacy-Safe OpenTelemetry Export** — OTLP traces and metrics via Tempo/Prometheus/Grafana ([Issue #15](https://github.com/jkuzel02/RCAnnon/issues/15))
+- [ ] **16-Scenario Evidence Capture** — Live snapshot capture across all Kind lab scenarios ([Issue #16](https://github.com/jkuzel02/RCAnnon/issues/16))
+- [ ] **Multi-Run Variant Benchmarking & Resilience Drills** — Paired evaluation across `base`, `optimal`, and `mas` ([Issue #17](https://github.com/jkuzel02/RCAnnon/issues/17))
+
+## Repository Map & Contributor Documentation
+
+```text
+RCAnnon/
+├── rca/
+│   ├── api/         # Scoped FastAPI OpenAI facade, SQLite storage, markdown rendering
+│   ├── contracts/   # Shared v1 Pydantic/JSON schemas and workflow contracts
+│   ├── evidence/    # Read-only K8s API collector, secret redaction, bundle hashing
+│   ├── providers/   # Shared e-INFRA CZ OpenAI-compatible completion adapter
+│   └── workflows/   # base, optimal, parallel mas workflows & MAS evidence validation
+├── prompts/         # Locked versioned system prompts (base.md, optimal.md, mas/*.md)
+├── scenarios/       # 16 reproducible Kubernetes incident specs (01..16) with app/ + rca.json
+├── evaluation/      # Prompt smoke checks and live evaluation utilities
+├── infrastructure/  # Docker Compose + LibreChat packaging & Kind/Flux lab
+├── docs/            # Architecture, container image, scenarios, testing, and user guides
+└── tests/           # Offline pytest suites
+```
+
+| Document | Purpose |
+| --- | --- |
+| [docs/architecture.md](./docs/architecture.md) | Ratified `v1` architecture ADR, trust boundaries, and shared data/API contracts |
+| [docs/testing.md](./docs/testing.md) | Focused `pytest` commands, workflow contract, and MAS claim-validation guarantees |
+| [docs/scenarios.md](./docs/scenarios.md) | Sixteen Kubernetes incident scenario specs and evaluator format |
+| [infrastructure/k8s/README.md](./infrastructure/k8s/README.md) | Kind + Flux CD target lab bootstrap, Grafana/Flux access, and cleanup |
+| [evaluation/prompt_checks/README.md](./evaluation/prompt_checks/README.md) | Local live LLM prompt smoke checks against e-INFRA CZ |
+| [SECURITY.md](./SECURITY.md) | Isolation model, container posture verification, and vulnerability reporting |
+| [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Community standards and reporting guidelines |
+| [CHANGELOG.md](./CHANGELOG.md) | Automated Conventional Commits release history |
+| [GitHub Issues](https://github.com/jkuzel02/RCAnnon/issues) | Open tasks and bug reports |

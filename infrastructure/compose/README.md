@@ -1,6 +1,17 @@
 # Independent Docker Compose Deployment
 
-This directory packages RCAnnon to run on a workstation or separate management host outside the target Kubernetes cluster and outside the target monitoring stack in `infrastructure/k8s/`.
+This directory packages RCAnnon's **reference Docker Compose deployment** for a workstation or standalone management host outside the target Kubernetes cluster and outside the target monitoring stack in `infrastructure/k8s/`. (Prefer running inside a **separate management Kubernetes cluster** instead? Use the published multi-arch OCI container image and Kubernetes guidance in [docs/container-image.md](../../docs/container-image.md)—RCAnnon's goal is isolation from the *target* cluster's failure domain, not tying you exclusively to Compose.)
+
+## Services at a Glance
+
+| Service | Image & Posture | Networks | Exposure & Role |
+| --- | --- | --- | --- |
+| `ui` | LibreChat `v0.8.9` (`UID=1000`, read-only rootfs, digest-pinned) | `ui_edge`, `ui_api`, `ui_db` | Publishes `127.0.0.1:3080` only; local email auth + chat UI |
+| `api` | RCAnnon API (`UID=10001`, read-only rootfs) | `ui_api`, `api_egress`, `telemetry_net` | No host ports; FastAPI OpenAI facade, read-only K8s collector, LangGraph workflows |
+| `mongodb` | MongoDB `8.0` (digest-pinned) | `ui_db` (`internal: true`) | No host ports; persists users & chat history in `rcannon_mongo_data` |
+| `ui-bootstrap` | LibreChat `v0.8.9` (`profiles: ["bootstrap"]`, `UID=1000`) | `ui_db` (`internal: true`) | Opt-in one-shot admin seeder reading `librechat_admin_password` over `stdin` |
+
+*Intentionally omitted upstream services:* `meilisearch` (`SEARCH=false`), `vectordb` / PostgreSQL, `rag_api`, `redis`, and external admin panels are omitted and unnecessary for login, streaming, or persisted history.
 
 ## Architecture, Operational Dependencies, and Isolation
 
@@ -80,11 +91,11 @@ Instead of building locally, you can deploy the multi-architecture (`linux/amd64
 
 ```sh
 ./infrastructure/compose/scripts/init-dev-secrets.sh
-RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:0.1.0 docker compose up -d --no-build --wait
+RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:latest docker compose up -d --no-build --wait
 docker compose --profile bootstrap run --rm ui-bootstrap
 ```
 
-Use `:main` for rolling `main` builds or pin by manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification.
+Pin to an exact version tag (such as `0.1.3`), `:main` for rolling `main` builds, or an immutable manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification.
 
 ## Enabling Live e-INFRA CZ Inference
 
