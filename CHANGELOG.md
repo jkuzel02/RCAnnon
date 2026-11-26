@@ -4,6 +4,14 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.2](https://github.com/jkuzel02/RCAnnon/compare/0.1.1...0.1.2) (2026-11-26)
+
+
+### Features
+
+* **workflows:** validate MAS evidence claims and partial-source failures ([2095108](https://github.com/jkuzel02/RCAnnon/commit/2095108f806eb40f6b1ed07e0c9539d69cb88b0d))
+* **workflows:** validate MAS evidence claims and partial-source failures ([7d75d17](https://github.com/jkuzel02/RCAnnon/commit/7d75d172f013eed925af19863079a86ce806dc6b)), closes [#11](https://github.com/jkuzel02/RCAnnon/issues/11)
+
 ## [0.1.1](https://github.com/jkuzel02/RCAnnon/compare/0.1.0...0.1.1) (2026-11-23)
 
 
