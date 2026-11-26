@@ -4,6 +4,14 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.5](https://github.com/jkuzel02/RCAnnon/compare/0.1.4...0.1.5) (2026-11-26)
+
+
+### Features
+
+* **compose:** simplify quick start with zero-touch docker compose up and Kind guide ([79dc1f6](https://github.com/jkuzel02/RCAnnon/commit/79dc1f612854f4e65d7c85a1ca2c95dc15dc0a09))
+* **compose:** simplify quick start with zero-touch docker compose up and Kind guide ([c5f5e39](https://github.com/jkuzel02/RCAnnon/commit/c5f5e39011f3fcfe3b544ddadc7a602ac32eb452)), closes [#65](https://github.com/jkuzel02/RCAnnon/issues/65)
+
 ## [0.1.4](https://github.com/jkuzel02/RCAnnon/compare/0.1.3...0.1.4) (2026-11-26)
 
 
