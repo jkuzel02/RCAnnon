@@ -227,3 +227,4 @@ infrastructure/compose/secrets/*.secret
 infrastructure/compose/secrets/*.txt
 infrastructure/compose/kubeconfig/
 *.kubeconfig
+compose.override.yaml

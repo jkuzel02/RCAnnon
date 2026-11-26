@@ -2,7 +2,7 @@
 #
 # Apply only to target clusters/namespaces you want RCAnnon to inspect.
 # Keep Secrets, pods/exec, pods/proxy, nodes/proxy, and write verbs excluded.
-# This standalone manifest is not applied by infrastructure/k8s/bootstrap.sh.
+# Applied automatically for the local Kind lab by infrastructure/k8s/bootstrap.sh.
 ---
 apiVersion: v1
 kind: ServiceAccount

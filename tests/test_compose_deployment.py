@@ -340,8 +340,20 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     dockerignore_lines = {
         line.strip() for line in DOCKERIGNORE.read_text(encoding="utf-8").splitlines() if line.strip()
     }
-    for required_ignore in (".git", ".env", "*.kubeconfig", "secrets", "infrastructure"):
+    for required_ignore in (
+        ".git",
+        ".env",
+        "*.kubeconfig",
+        "compose.override.yaml",
+        "secrets",
+        "infrastructure",
+    ):
         assert required_ignore in dockerignore_lines
+
+    gitignore_lines = {
+        line.strip() for line in (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines() if line.strip()
+    }
+    assert "compose.override.yaml" in gitignore_lines
 
     base = yaml.safe_load(COMPOSE_FILE.read_text(encoding="utf-8"))
     openai_overlay = yaml.safe_load(COMPOSE_OPENAI_FILE.read_text(encoding="utf-8"))
@@ -462,3 +474,12 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     )
     assert list(kube["services"].keys()) == ["api"]
     assert any(vol.endswith(":ro") for vol in kube["services"]["api"]["volumes"])
+
+
+def test_k8s_bootstrap_wires_readonly_kind_kubeconfig_and_compose_override():
+    bootstrap = (REPO_ROOT / "infrastructure" / "k8s" / "bootstrap.sh").read_text(encoding="utf-8")
+    assert "rbac/rcannon-readonly.yaml" in bootstrap
+    assert "https://local-control-plane:6443" in bootstrap
+    assert "compose.override.yaml" in bootstrap
+    assert "infrastructure/compose/kubeconfig" in bootstrap or "../compose/kubeconfig" in bootstrap
+    assert "insecure-skip-tls-verify" not in bootstrap

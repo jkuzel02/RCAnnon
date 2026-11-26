@@ -10,6 +10,7 @@ __pycache__
 *.sqlite
 *.sqlite3
 *.kubeconfig
+compose.override.yaml
 *.pem
 *.key
 .env
