@@ -122,3 +122,45 @@ def test_container_docs_changelog_dockerfile_labels_and_compose_image_var():
     assert compose["services"]["ui"]["image"].startswith(
         "registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:"
     )
+
+
+def test_release_please_extra_files_sync_doc_versions():
+    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    project_version = pyproject["project"]["version"]
+
+    config = json.loads((REPO_ROOT / "release-please-config.json").read_text(encoding="utf-8"))
+    extra_files = config["packages"]["."]["extra-files"]
+    expected_paths = {
+        "docs/container-image.md",
+        "docs/getting-started.md",
+        "infrastructure/compose/README.md",
+        "infrastructure/compose/.env.example",
+    }
+    configured = {entry["path"]: entry["type"] for entry in extra_files}
+    assert expected_paths.issubset(configured.keys())
+    for rel_path in expected_paths:
+        assert configured[rel_path] == "generic"
+        content = (REPO_ROOT / rel_path).read_text(encoding="utf-8")
+        lines = content.splitlines()
+        marked_segments: list[str] = []
+        in_block = False
+        block_lines: list[str] = []
+        for line in lines:
+            if "x-release-please-start-version" in line:
+                in_block = True
+                block_lines = []
+            elif "x-release-please-end" in line:
+                assert in_block
+                marked_segments.append("\n".join(block_lines))
+                in_block = False
+            elif in_block:
+                block_lines.append(line)
+            elif "x-release-please-version" in line:
+                marked_segments.append(line)
+
+        assert not in_block, f"Unclosed x-release-please block in {rel_path}"
+        assert marked_segments, f"No x-release-please version markers found in {rel_path}"
+        for segment in marked_segments:
+            assert project_version in segment, (
+                f"Expected version {project_version!r} in marked segment of {rel_path}: {segment!r}"
+            )

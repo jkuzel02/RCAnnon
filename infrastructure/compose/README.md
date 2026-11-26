@@ -95,7 +95,7 @@ RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:latest docker compose up -d --no-build --
 docker compose --profile bootstrap run --rm ui-bootstrap
 ```
 
-Pin to an exact version tag (such as `0.1.3`), `:main` for rolling `main` builds, or an immutable manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification.
+Pin to an exact version tag (such as `0.1.3`), `:main` for rolling `main` builds, or an immutable manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification. <!-- x-release-please-version -->
 
 ## Enabling Live e-INFRA CZ Inference
 

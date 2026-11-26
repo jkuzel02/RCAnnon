@@ -106,7 +106,7 @@ docker compose \
 | --- | --- |
 | [Compose Operations](../infrastructure/compose/README.md) | Service topology, LibreChat user/admin management, live overlays, Kind reachability, and backups |
 | [Compose Secret Files](../infrastructure/compose/secrets/README.md) | Secret files, formatting requirements, UID ownership (`1000` vs `10001`), and permissions |
-| [Container Image](../docs/container-image.md) | GHCR image tags (`latest`, `0.1.3`, `main`, `sha-*`), runtime variables, and SLSA provenance |
+| [Container Image](../docs/container-image.md) | GHCR image tags (`latest`, `0.1.3`, `main`, `sha-*`), runtime variables, and SLSA provenance | <!-- x-release-please-version -->
 | [Architecture & `v1` Contracts](../docs/architecture.md) | Trust boundaries, redaction guarantees, and OpenAI/operator API surface |
 
 ---
