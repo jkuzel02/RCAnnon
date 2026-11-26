@@ -1,47 +1,50 @@
-# Testing the LangGraph RCA workflows
+# Testing RCAnnon Workflows and Runtime Contracts
 
-From the repository root, use `uv` (Python `3.12` via `.python-version`) and run:
+All test suites run offline without live LLM credentials or a Kubernetes cluster, using Python `3.12` (`.python-version`) via `uv`.
+
+## Quick Test Commands
+
+Install dev dependencies once and run the full offline suite from the repository root:
 
 ```sh
-uv run --with-requirements tests/requirements.txt pytest tests -rx
+uv sync
+uv run --no-sync pytest tests -rx
 ```
 
-The workflow tests use fake completion responses and run without API
-credentials, Kubernetes, or LangGraph. They are expected failures while
-`rca.workflows` is absent. Once the module exists, the tests run normally
-and implementation errors fail the suite. During test-driven development use
-`uv run --with-requirements tests/requirements.txt pytest tests --runxfail` to see the initial failing tests.
+Run focused subsets while iterating:
 
-## Proposed interface
+```sh
+# Workflows & MAS validation
+uv run --no-sync pytest tests/test_rca_workflows.py tests/test_mas_workflow.py tests/test_mas_validation.py tests/test_optimal_workflow.py tests/test_base_workflow.py
 
-Implement `rca.workflows.build_workflow(variant, *, complete)` to return a
-compiled LangGraph with an `invoke({"context": context})` entry point. The
-caller passes the `context` object from a case's `rca.json`. Keep the fixture's
-`root-cause` with the evaluator.
+# Evidence collection & redaction
+uv run --no-sync pytest tests/test_evidence_collector.py tests/test_evidence_bundles.py tests/test_evidence_redaction.py
 
-Supply the model through the synchronous callable `complete(prompt_path,
-payload) -> str`. The prompt path is relative to `prompts/` and the
-payload is JSON-compatible. Production can implement this callable with the
-[e-INFRA CZ Chat Completions API](https://docs.cerit-sc.cz/en/docs/ai-as-a-service/ai-api).
-Tests supply deterministic responses and simulate provider failures through the
-same callable.
+# FastAPI facade, Docker Compose & LibreChat config/scripts
+uv run --no-sync pytest tests/test_api.py tests/test_api_storage.py tests/test_compose_deployment.py tests/test_librechat_integration.py
+
+# English-only documentation CI check
+uv run --no-project --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md README.update.md docs/*.md infrastructure/compose/README.md infrastructure/compose/secrets/README.md
+```
+
+For live prompt smoke checks against e-INFRA CZ, see [evaluation/prompt_checks/README.md](../evaluation/prompt_checks/README.md).
+
+## Workflow Contract (`rca.workflows.build_workflow`)
+
+`rca.workflows.build_workflow(variant, *, complete)` returns a compiled LangGraph with an `invoke({"context": context})` entry point. Tests and runtime adapters supply the synchronous callable `complete(prompt_path, payload) -> str`, where `prompt_path` is relative to `prompts/` and `payload` is JSON-compatible.
 
 | Variant | Model calls | Result state |
 | --- | --- | --- |
-| `base` | `base.md` receives `{"context": context}` | `root-cause` contains the diagnosis text. |
+| `base` | `base.md` receives `{"context": context}` | `root-cause` contains the free-text diagnosis. |
 | `optimal` | `optimal.md` receives `{"context": context}` | `root-cause` contains the parsed five-field RCA object. |
-| `mas` | Three specialists receive their own fields. The coordinator receives the full context and all three parsed reports keyed by specialist name. | `root-cause` contains the parsed five-field RCA object. |
+| `mas` | Three domain specialists run in parallel on partitioned fields; `mas/coordinator.md` receives the full `context` plus all three parsed specialist reports keyed by agent name. | `root-cause` contains the parsed five-field RCA object. |
 
-For MAS, send `resources` and `events` to the configuration specialist,
-`logs` and `checks` to the logs specialist, and `metrics`, `time_window`,
-and `resource_limits` to the metrics specialist. Each resource limit record
-names the workload as `Kind/name` and includes its namespace, container,
-requests, and limits. Preserve absent observations as empty lists or a null
-time window. The coordinator runs after the three valid reports are ready.
+For `mas`, inputs are partitioned as follows:
+- `mas/k8s-config-events.md`: `resources` and `events`
+- `mas/logs-connectivity.md`: `logs` and `checks`
+- `mas/metrics-telemetry.md`: `metrics`, `time_window`, and `resource_limits` (each resource limit record names the workload as `Kind/name` with namespace, container, requests, and limits)
 
-Use the JSON contracts in the corresponding prompt files. Invalid structured
-responses should raise `ValueError`. Let completion errors such as provider
-timeouts propagate to the caller.
+Absent observations remain empty lists or `null` for `time_window`. Invalid structured responses raise `ValueError`, and provider exceptions (such as timeouts) propagate cleanly to the caller.
 
 ## MAS Evidence Validation Boundaries
 
