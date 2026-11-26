@@ -34,7 +34,7 @@ Prefer Docker secret files (`*_FILE`) mounted under `/run/secrets/` rather than 
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `RCANNON_PROVIDER_MODE` | No | `openai` | `openai` for live OpenAI-compatible API calls or `mock` for offline smoke testing |
+| `RCANNON_PROVIDER_MODE` | No | `openai` | `auto` (uses `openai` when an API key is set, else `mock`), `openai`, or `mock` |
 | `RCANNON_UI_BEARER_TOKEN_FILE` | Yes | — | Path to UI service bearer token (`RCANNON_UI_BEARER_TOKEN` alternative) |
 | `RCANNON_OPERATOR_BEARER_TOKEN_FILE` | Yes | — | Path to distinct operator bearer token (`RCANNON_OPERATOR_BEARER_TOKEN` alternative) |
 | `RCANNON_ALLOWED_SCOPES` | No | `{}` | JSON map of allowlisted cluster aliases to allowed namespaces |
@@ -50,12 +50,10 @@ Prefer Docker secret files (`*_FILE`) mounted under `/run/secrets/` rather than 
 
 ### With Docker Compose
 
-Set `RCANNON_IMAGE` and start without building locally, then seed the local LibreChat administrator account:
+Set `RCANNON_IMAGE` and start without building locally (secret initialization and admin bootstrap run automatically):
 
 ```sh
-./infrastructure/compose/scripts/init-dev-secrets.sh
 RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:latest docker compose up -d --no-build --wait
-docker compose --profile bootstrap run --rm ui-bootstrap
 ```
 
 See [infrastructure/compose/README.md](../infrastructure/compose/README.md) for live OpenAI-compatible API and read-only kubeconfig overlays.

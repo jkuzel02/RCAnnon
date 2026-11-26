@@ -9,7 +9,8 @@ This directory packages RCAnnon's **reference Docker Compose deployment** for a 
 | `ui` | LibreChat `v0.8.9` (`UID=1000`, read-only rootfs, digest-pinned) | `ui_edge`, `ui_api`, `ui_db` | Publishes `127.0.0.1:3080` only; local email auth + chat UI |
 | `api` | RCAnnon API (`UID=10001`, read-only rootfs) | `ui_api`, `api_egress`, `telemetry_net` | No host ports; FastAPI OpenAI facade, read-only K8s collector, LangGraph workflows |
 | `mongodb` | MongoDB `8.0` (digest-pinned) | `ui_db` (`internal: true`) | No host ports; persists users & chat history in `rcannon_mongo_data` |
-| `ui-bootstrap` | LibreChat `v0.8.9` (`profiles: ["bootstrap"]`, `UID=1000`) | `ui_db` (`internal: true`) | Opt-in one-shot admin seeder reading `librechat_admin_password` over `stdin` |
+| `secrets-init` | RCAnnon image (one-shot, `read_only: true`, `restart: "no"`) | `network_mode: none` | Populates isolated `/run/rcannon-secrets` volumes for `api`, `ui`, and `ui-bootstrap` |
+| `ui-bootstrap` | LibreChat `v0.8.9` (one-shot, `UID=1000`, `restart: "no"`) | `ui_db` (`internal: true`) | Idempotent admin seeder reading `librechat_admin_password` over `stdin` |
 
 *Intentionally omitted upstream services:* `meilisearch` (`SEARCH=false`), `vectordb` / PostgreSQL, `rag_api`, `redis`, and external admin panels are omitted and unnecessary for login, streaming, or persisted history.
 
@@ -19,7 +20,8 @@ This directory packages RCAnnon's **reference Docker Compose deployment** for a 
   - `api`: Non-root FastAPI + LangGraph RCA runtime (`Dockerfile`, `uv sync --frozen --no-dev --no-editable`, Python `3.12`, `UID=10001`, read-only rootfs, `cap_drop: [ALL]`, `no-new-privileges:true`).
   - `ui`: MIT-licensed LibreChat pinned to `v0.8.9` by multi-arch OCI digest (`registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b`), running as non-root `node` (`UID=1000`), read-only rootfs, `cap_drop: [ALL]`, `no-new-privileges:true`.
   - `mongodb`: MongoDB pinned to `8.0` by multi-arch OCI digest (`mongo:8.0@sha256:479e85ced54ffb8a40dade1dcde2da2a9ae858515b9415e9cc54bfb8f0575d01`) persisting LibreChat user accounts and conversation history in `rcannon_mongo_data`.
-  - `ui-bootstrap` (opt-in `profiles: ["bootstrap"]`): One-shot container using the pinned LibreChat `v0.8.9` image to seed the initial local `ADMIN` account on a fresh MongoDB.
+  - `secrets-init`: One-shot setup container (`network_mode: none`) generating isolated per-service runtime secrets (`0400`) inside separate named volumes (`rcannon_api_secrets`, `rcannon_ui_secrets`, `rcannon_bootstrap_secrets`), optionally seeded from host `infrastructure/compose/secrets/*.secret` files.
+  - `ui-bootstrap`: Automatic one-shot container using the pinned LibreChat `v0.8.9` image to seed the initial local `ADMIN` account idempotently on a fresh MongoDB.
 - **Intentionally omitted upstream services:** `meilisearch` (`SEARCH=false`), `vectordb` / PostgreSQL, `rag_api` (file search/uploads disabled in `librechat.yaml`), `redis`, and any external admin panel are omitted and are not required for login, chat streaming, or conversation persistence.
 - **Network separation (`compose.yaml`):**
   - `ui_edge`: publishes only `127.0.0.1:3080` for local loopback UI access (`DOMAIN_CLIENT` and `DOMAIN_SERVER` on loopback; place behind an independent TLS reverse proxy for remote access).
@@ -28,39 +30,33 @@ This directory packages RCAnnon's **reference Docker Compose deployment** for a 
   - `api_egress`: provides `api` outbound access to the target Kubernetes API and external LLM provider.
   - `telemetry_net` (`internal: true`): reserved for internal telemetry collection.
 - **Credential separation:**
-  - `ui` receives only `rcannon_ui_bearer_token` and LibreChat auth/encryption secrets (`librechat_jwt_secret`, `librechat_jwt_refresh_secret`, `librechat_creds_key`, `librechat_creds_iv`) via `/run/secrets/*` (read in `scripts/librechat-entrypoint.sh`).
-  - `api` receives `rcannon_ui_bearer_token`, `rcannon_operator_bearer_token`, and optionally `rcannon_llm_api_key` plus read-only kubeconfig mounts.
-  - `librechat_admin_password` is mounted only into the opt-in `ui-bootstrap` profile container.
+  - `ui` receives only `rcannon_ui_bearer_token` and LibreChat auth/encryption secrets (`librechat_jwt_secret`, `librechat_jwt_refresh_secret`, `librechat_creds_key`, `librechat_creds_iv`) via `/run/rcannon-secrets/*` (read in `scripts/librechat-entrypoint.sh`).
+  - `api` receives `rcannon_ui_bearer_token`, `rcannon_operator_bearer_token`, and optional `OPENAI_API_KEY` (or `rcannon_llm_api_key` via `compose.openai.yaml`) plus read-only kubeconfig mounts.
+  - `librechat_admin_password` is mounted only into the one-shot `ui-bootstrap` container.
 - **UI hardening (`infrastructure/compose/librechat.yaml`):**
   - Exposes a single server-side custom OpenAI endpoint (`RCAnnon` -> `http://api:8000/v1`, `allowedAddresses: ["api:8000"]`) with the three workflow aliases (`rcannon-base`, `rcannon-optimal`, `rcannon-mas`) and `fetch: false`.
   - Enables local email login (`ALLOW_EMAIL_LOGIN=true`) while disabling self-signup (`ALLOW_REGISTRATION=false`), social login/registration, and unverified login.
   - Disables secondary providers, parameters/presets/prompts editing, native tools, agents, web search, file uploads/search, and hidden auto-title LLM calls (`titleConvo: false`), and strips incompatible OpenAI parameters via `dropParams`.
 - **Independent health checks:** `api` (`GET /healthz`, `GET /readyz`), `mongodb` (`mongosh db.adminCommand({ ping: 1 })`), and `ui` (`GET /health`) verify service health without depending on the target Kubernetes cluster or external LLM provider.
 
-## Quick Start (Offline Mock Mode, No Target Cluster Required)
+## Quick Start (Zero-Touch `.env` or Offline Mock Mode)
 
-1. Generate all required local development secret files:
+1. Copy `.env.example` to `.env` and optionally paste `OPENAI_API_KEY` (leave it empty to run in offline mock mode):
 
 ```sh
-./infrastructure/compose/scripts/init-dev-secrets.sh
+cp .env.example .env
 ```
 
-2. Validate the Compose configuration and start the stack:
+2. Validate and start the stack (`secrets-init` and `ui-bootstrap` run automatically and idempotently):
 
 ```sh
 docker compose config --quiet
 docker compose up -d --build --wait
 ```
 
-3. Seed the initial local administrator account on the fresh database (idempotent on repeated runs):
+3. Open `http://127.0.0.1:3080` in a browser and sign in with `admin@rcannon.local` and `rcannon-local-admin` (or your `LIBRECHAT_ADMIN_EMAIL` / `LIBRECHAT_ADMIN_PASSWORD` in `.env`). Select `rcannon-base`, `rcannon-optimal`, or `rcannon-mas` and submit an `/rca` prompt (for example `/rca context=lab namespace=demo -- checkout pods failing`).
 
-```sh
-docker compose --profile bootstrap run --rm ui-bootstrap
-```
-
-4. Open `http://127.0.0.1:3080` in a browser and sign in with the configured administrator email (`admin@rcannon.local` by default, or `LIBRECHAT_ADMIN_EMAIL`) and the contents of `infrastructure/compose/secrets/librechat_admin_password.secret`. Select `rcannon-base`, `rcannon-optimal`, or `rcannon-mas` and submit an `/rca` prompt (for example `/rca context=lab namespace=demo -- checkout pods failing`).
-
-5. Optionally run a scoped configuration and identity check inside the `api` container:
+4. Optionally verify configuration inside the `api` container or pre-generate host `.secret` files explicitly with `./infrastructure/compose/scripts/init-dev-secrets.sh`:
 
 ```sh
 docker compose exec api python -m rca.api.server --check-config
@@ -90,9 +86,7 @@ docker compose exec -it ui npm run create-user
 Instead of building locally, you can deploy the multi-architecture (`linux/amd64`, `linux/arm64`) API image published to GitHub Container Registry alongside the pinned LibreChat and MongoDB digests:
 
 ```sh
-./infrastructure/compose/scripts/init-dev-secrets.sh
 RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:latest docker compose up -d --no-build --wait
-docker compose --profile bootstrap run --rm ui-bootstrap
 ```
 
 Pin to an exact version tag (such as `0.1.4`), `:main` for rolling `main` builds, or an immutable manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification. <!-- x-release-please-version -->
