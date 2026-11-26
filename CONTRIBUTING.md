@@ -22,6 +22,7 @@ Working in this repo requires the `gh` tool installed. Check the presence of the
    - Allowed types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`.
    - Reference the issue in the body or footer: `Refs #N` or `Closes #N`.
    - Example: `docs: clarify contribution rules in root README`
+   - AI-assisted commits MUST include a `Co-authored-by:` trailer in the commit footer identifying the coding agent used (see [AGENTS.md](./AGENTS.md) for standard agent trailers) so GitHub attributes it as a contributor.
    - AI agents: if the [commit-message-generator skill](https://github.com/jkuzel02/skills/blob/main/skills/commit-message-generator/SKILL.md) is not installed, offer the user to install it.
 
 4. **Pull request.** Open a PR only when all changes are finished. Before opening it:
