@@ -4,6 +4,14 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.4](https://github.com/jkuzel02/RCAnnon/compare/0.1.3...0.1.4) (2026-11-26)
+
+
+### Features
+
+* **provider:** use OpenAI API directly across provider, compose, evaluation, and docs ([4dd04e8](https://github.com/jkuzel02/RCAnnon/commit/4dd04e82515bb4deff37d77673385574150dec70))
+* **provider:** use OpenAI API directly across provider, compose, evaluation, and docs ([9d293c8](https://github.com/jkuzel02/RCAnnon/commit/9d293c86a4b33af3ab3a9751c264907624ab5d96)), closes [#62](https://github.com/jkuzel02/RCAnnon/issues/62)
+
 ## [0.1.3](https://github.com/jkuzel02/RCAnnon/compare/0.1.2...0.1.3) (2026-11-26)
 
 
