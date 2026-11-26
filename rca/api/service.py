@@ -38,6 +38,7 @@ from rca.contracts.runtime import (
 )
 from rca.providers.einfra import EInfraProvider
 from rca.workflows import build_workflow
+from rca.workflows.mas_validation import AgentExecutionTrace, MasTracer, _emit_trace
 
 
 class ScopeDeniedError(Exception):
@@ -77,11 +78,13 @@ class RcaApiService:
         store: RunStore,
         complete: CompleteFn,
         collector: CollectorFn | None = None,
+        tracer: MasTracer | None = None,
     ) -> None:
         self._config = config
         self._store = store
         self._complete = complete
         self._collector = collector
+        self._tracer = tracer
         self._executor = ThreadPoolExecutor(
             max_workers=config.max_workers,
             thread_name_prefix="rcannon-api",
@@ -322,6 +325,7 @@ class RcaApiService:
         target: TargetSelector | None = None,
         incident: str | None = None,
         cancel_event: threading.Event | None = None,
+        tracer: MasTracer | None = None,
     ) -> RunResult:
         """Execute a bounded RCA workflow run and persist its RunResult envelope."""
         preloaded = self.precheck_run_inputs(snapshot_id=snapshot_id, target=target)
@@ -353,6 +357,15 @@ class RcaApiService:
         snapshot_holder: dict[str, EvidenceSnapshot] = {}
         if preloaded is not None:
             snapshot_holder["snapshot"] = preloaded
+        mas_traces: list[AgentExecutionTrace] = []
+        mas_traces_lock = threading.Lock()
+
+        def _record_mas_trace(trace: AgentExecutionTrace) -> None:
+            with mas_traces_lock:
+                mas_traces.append(trace)
+            active_tracer = tracer if tracer is not None else self._tracer
+            if active_tracer is not None:
+                _emit_trace(active_tracer, trace)
 
         def tracked_complete(prompt_path: str, payload: Mapping[str, Any]) -> str:
             if active_cancel.is_set():
@@ -427,7 +440,17 @@ class RcaApiService:
             if incident is not None and preloaded is not None:
                 working_context["incident"] = redact_text(incident, self._secrets)
 
-            graph = build_workflow(variant, complete=tracked_complete)
+            if variant == "mas":
+                graph = build_workflow(
+                    variant,
+                    complete=tracked_complete,
+                    validate_evidence=True,
+                    coverage=snapshot.coverage,
+                    tracer=_record_mas_trace,
+                    secrets=self._secrets,
+                )
+            else:
+                graph = build_workflow(variant, complete=tracked_complete)
             raw_output = graph.invoke({"context": working_context})
             redacted_result = redact_value(raw_output["root-cause"], self._secrets)
             final_status = "qualified" if snapshot.is_degraded() else "diagnosed"
@@ -470,6 +493,21 @@ class RcaApiService:
                 return None, None, {}
             return snap.snapshot_id, snap.scope_hash, snap.coverage
 
+        def _terminal_limitations() -> list[str]:
+            snap = snapshot_holder.get("snapshot")
+            lines = snap.build_limitations() if snap is not None else []
+            with mas_traces_lock:
+                traces = list(mas_traces)
+            for trace in traces:
+                if trace.status in {"failed", "cancelled"} and trace.error_category:
+                    line = redact_text(
+                        f"mas/{trace.agent}: {trace.status} ({trace.error_category})",
+                        self._secrets,
+                    )
+                    if line and line not in lines:
+                        lines.append(line)
+            return lines
+
         loop = asyncio.get_running_loop()
         try:
             finalized = await asyncio.wait_for(
@@ -489,6 +527,7 @@ class RcaApiService:
                 snapshot_hash=snap_hash,
                 status="interrupted",
                 coverage=cov,
+                limitations=_terminal_limitations(),
                 error_code="client_disconnected",
                 error_message="Run interrupted before completion.",
                 usage=_build_usage(),
@@ -508,6 +547,7 @@ class RcaApiService:
                 snapshot_hash=snap_hash,
                 status="interrupted",
                 coverage=cov,
+                limitations=_terminal_limitations(),
                 error_code="client_disconnected",
                 error_message="Run interrupted before completion.",
                 usage=_build_usage(),
@@ -527,6 +567,7 @@ class RcaApiService:
                 snapshot_hash=snap_hash,
                 status="failed",
                 coverage=cov,
+                limitations=_terminal_limitations(),
                 error_code="timeout",
                 error_message="Diagnosis timed out before completion.",
                 usage=_build_usage(),
@@ -545,6 +586,7 @@ class RcaApiService:
                 snapshot_hash=snap_hash,
                 status="failed",
                 coverage=cov,
+                limitations=_terminal_limitations(),
                 error_code="invalid_model_output",
                 error_message="Model returned an invalid structured response.",
                 usage=_build_usage(),
@@ -565,6 +607,7 @@ class RcaApiService:
                 snapshot_hash=snap_hash,
                 status="failed",
                 coverage=cov,
+                limitations=_terminal_limitations(),
                 error_code="provider_unavailable",
                 error_message="Model provider is currently unavailable.",
                 usage=_build_usage(),

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import json
 from typing import Any
 
@@ -102,6 +103,29 @@ PROMPT_ALLOWLIST: frozenset[str] = frozenset(
         "mas/coordinator.md",
     }
 )
+
+OBSERVATION_FIELDS: dict[str, str] = {
+    "events": "significant_events",
+    "logs": "log_findings",
+    "checks": "connectivity_findings",
+}
+
+
+def validate_observations(report: Mapping[str, Any], payload: Mapping[str, Any]) -> None:
+    """Reject affirmative specialist findings when the corresponding input source is empty."""
+    for source, findings in OBSERVATION_FIELDS.items():
+        if findings in report and not payload.get(source) and report[findings]:
+            raise ValueError(f"Reported {findings} with no {source} in the input.")
+    if "metrics" in payload and not payload["metrics"]:
+        if (
+            report.get("throttling_detected")
+            or report.get("saturation_identified") is not None
+            or any(
+                finding.get("status") != "uncollected"
+                for finding in report.get("resource_findings", [])
+            )
+        ):
+            raise ValueError("Reported measured behavior with no metrics in the input.")
 
 
 def parse_and_validate_json(

@@ -13,11 +13,40 @@ from urllib.request import Request, urlopen
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
-if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    from evaluation.prompt_checks.schemas import CASE, RCA, REPORT_SCHEMAS
-else:
-    from .schemas import CASE, RCA, REPORT_SCHEMAS
+try:
+    from rca.contracts.schemas import (
+        CASE,
+        OBSERVATION_FIELDS,
+        RCA,
+        REPORT_SCHEMAS,
+        validate_observations,
+    )
+except ModuleNotFoundError:
+    if __package__ in {None, ""}:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+        from evaluation.prompt_checks.schemas import CASE, RCA, REPORT_SCHEMAS
+    else:
+        from .schemas import CASE, RCA, REPORT_SCHEMAS
+    OBSERVATION_FIELDS = {
+        "events": "significant_events",
+        "logs": "log_findings",
+        "checks": "connectivity_findings",
+    }
+
+    def validate_observations(report, payload):
+        for source, findings in OBSERVATION_FIELDS.items():
+            if findings in report and not payload.get(source) and report[findings]:
+                raise ValueError(f"Reported {findings} with no {source} in the input.")
+        if "metrics" in payload and not payload["metrics"]:
+            if (
+                report.get("throttling_detected")
+                or report.get("saturation_identified") is not None
+                or any(
+                    finding.get("status") != "uncollected"
+                    for finding in report.get("resource_findings", [])
+                )
+            ):
+                raise ValueError("Reported measured behavior with no metrics in the input.")
 
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -27,11 +56,6 @@ SPECIALISTS = {
     "k8s-config-events": ("resources", "events"),
     "logs-connectivity": ("logs", "checks"),
     "metrics-telemetry": ("metrics", "time_window"),
-}
-OBSERVATION_FIELDS = {
-    "events": "significant_events",
-    "logs": "log_findings",
-    "checks": "connectivity_findings",
 }
 
 
@@ -137,17 +161,6 @@ def missing_concepts(text, groups):
             for term in alternatives
         )
     ]
-
-
-def validate_observations(report, payload):
-    for source, findings in OBSERVATION_FIELDS.items():
-        if findings in report and not payload[source] and report[findings]:
-            raise ValueError(f"Reported {findings} with no {source} in the input.")
-    if "metrics" in payload and not payload["metrics"]:
-        if report["throttling_detected"] or any(
-            finding["status"] != "uncollected" for finding in report["resource_findings"]
-        ):
-            raise ValueError("Reported measured behavior with no metrics in the input.")
 
 
 def evaluate_case(case_id, context, expectations, send):

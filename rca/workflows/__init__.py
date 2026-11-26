@@ -9,6 +9,14 @@ from typing import Any
 from rca.contracts.provider import CompleteFn
 from rca.workflows.base import build_base_workflow
 from rca.workflows.mas import build_mas_workflow
+from rca.workflows.mas_validation import (
+    AgentExecutionTrace,
+    EvidenceClaimIssue,
+    MasTracer,
+    MasValidationError,
+    RecordingMasTracer,
+    build_validated_mas_workflow,
+)
 from rca.workflows.optimal import build_optimal_workflow
 
 WorkflowBuilder = Callable[..., Any]
@@ -66,7 +74,13 @@ register_variant("optimal", build_optimal_workflow)
 register_variant("mas", build_mas_workflow)
 
 __all__ = [
+    "AgentExecutionTrace",
+    "EvidenceClaimIssue",
+    "MasTracer",
+    "MasValidationError",
+    "RecordingMasTracer",
     "WorkflowBuilder",
+    "build_validated_mas_workflow",
     "build_workflow",
     "list_variants",
     "register_variant",

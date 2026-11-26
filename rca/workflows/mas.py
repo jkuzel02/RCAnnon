@@ -8,7 +8,12 @@ from typing import Any, TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from rca.contracts.provider import CompleteFn
+from rca.contracts.runtime import SourceCoverage
 from rca.contracts.schemas import RCA, REPORT_SCHEMAS, parse_and_validate_json
+from rca.workflows.mas_validation import (
+    MasTracer,
+    build_validated_mas_workflow,
+)
 
 MAX_SPECIALIST_CONCURRENCY = 3
 COORDINATOR_PROMPT_PATH = "mas/coordinator.md"
@@ -141,10 +146,25 @@ def build_mas_workflow(
     *,
     complete: CompleteFn,
     max_concurrency: int | None = None,
+    validate_evidence: bool = False,
+    coverage: Mapping[str, SourceCoverage] | None = None,
+    tracer: MasTracer | None = None,
+    strict_claims: bool = True,
+    secrets: Iterable[str] = (),
 ) -> Any:
     """Build a compiled 4-call parallel MAS LangGraph with strict report and RCA validation."""
     if not callable(complete):
         raise TypeError("complete must be a callable accepting (prompt_path, payload) -> str.")
+
+    if validate_evidence or coverage is not None or tracer is not None:
+        return build_validated_mas_workflow(
+            complete=complete,
+            max_concurrency=max_concurrency,
+            coverage=coverage,
+            tracer=tracer,
+            strict_claims=validate_evidence and strict_claims,
+            secrets=secrets,
+        )
 
     effective_concurrency = _resolve_max_concurrency(complete, max_concurrency)
 
