@@ -1,0 +1,97 @@
+# LibreChat v0.8.9 configuration for RCAnnon.
+# Mounted read-only into rcannon-ui at /app/librechat.yaml.
+version: 1.3.19
+cache: true
+
+registration:
+  socialLogins: []
+
+interface:
+  customWelcome: "RCAnnon — Kubernetes Root Cause Analysis"
+  modelSelect: true
+  parameters: false
+  presets: false
+  multiConvo: false
+  bookmarks: false
+  memories: false
+  prompts: false
+  agents: false
+  temporaryChat: false
+  runCode: false
+  webSearch: false
+  fileSearch: false
+  fileCitations: false
+  skills: false
+  schedules: false
+  sharedLinks: false
+  marketplace:
+    use: false
+  mcpServers:
+    use: false
+    create: false
+    share: false
+    public: false
+  remoteAgents:
+    use: false
+    create: false
+    share: false
+    public: false
+  peoplePicker:
+    users: false
+    groups: false
+    roles: false
+
+fileConfig:
+  serverFileSizeLimit: 0
+  endpoints:
+    default:
+      disabled: true
+    RCAnnon:
+      disabled: true
+
+endpoints:
+  allowedAddresses:
+    - "api:8000"
+  all:
+    titleConvo: false
+    activityLabel: false
+    activityPhaseLabel: false
+    reasoningLabel: false
+  custom:
+    - name: "RCAnnon"
+      apiKey: "${RCANNON_UI_BEARER_TOKEN}"
+      baseURL: "http://api:8000/v1"
+      models:
+        default:
+          - "rcannon-base"
+          - "rcannon-optimal"
+          - "rcannon-mas"
+        fetch: false
+      titleConvo: false
+      modelDisplayLabel: "RCAnnon"
+      dropParams:
+        - "stop"
+        - "user"
+        - "frequency_penalty"
+        - "presence_penalty"
+        - "temperature"
+        - "top_p"
+        - "max_tokens"
+        - "max_completion_tokens"
+        - "n"
+        - "tools"
+        - "tool_choice"
+        - "parallel_tool_calls"
+        - "response_format"
+        - "store"
+        - "reasoning_effort"
+        - "seed"
+        - "logit_bias"
+        - "logprobs"
+        - "top_logprobs"
+        - "metadata"
+        - "service_tier"
+        - "modalities"
+        - "audio"
+        - "prediction"
+        - "web_search_options"

@@ -41,7 +41,7 @@ flowchart LR
 
 You can verify the full stack locally without a Kubernetes cluster or an LLM API key.
 
-1. Clone the repository and generate distinct local bearer secret files:
+1. Clone the repository and generate distinct local development secret files:
 
 ```sh
 git clone https://github.com/jkuzel02/RCAnnon.git
@@ -49,26 +49,28 @@ cd RCAnnon
 ./infrastructure/compose/scripts/init-dev-secrets.sh
 ```
 
-2. Validate the Compose definition and start the stack using either a local build or the prebuilt GHCR image:
+2. Validate the Compose definition, start the stack (`api`, `mongodb`, and LibreChat `ui`), and seed the initial local administrator account:
 
 ```sh
 # Option A: Build locally
 docker compose config --quiet
 docker compose up -d --build --wait
+docker compose --profile bootstrap run --rm ui-bootstrap
 
-# Option B: Pull prebuilt multi-arch image from GHCR
+# Option B: Pull prebuilt multi-arch API image from GHCR
 RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:0.1.0 docker compose up -d --no-build --wait
+docker compose --profile bootstrap run --rm ui-bootstrap
 ```
 
-3. Verify the loopback gateway on `127.0.0.1:3080`:
+3. Verify LibreChat is healthy on loopback (`127.0.0.1:3080`) and sign in through the browser:
 
 ```sh
-curl -fsS http://127.0.0.1:3080/healthz
-curl -fsS http://127.0.0.1:3080/v1/models
-curl -fsS -X POST http://127.0.0.1:3080/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"model":"rcannon-mas","messages":[{"role":"user","content":"/rca context=lab namespace=demo -- checkout is failing"}]}'
+curl -fsS http://127.0.0.1:3080/health
 ```
+
+Open `http://127.0.0.1:3080`, log in with `admin@rcannon.local` and the generated password in `infrastructure/compose/secrets/librechat_admin_password.secret`, select a model (`rcannon-base`, `rcannon-optimal`, or `rcannon-mas`), and submit `/rca context=lab namespace=demo -- checkout is failing`.
+
+For operator-only API checks without going through LibreChat, see [infrastructure/compose/README.md](../infrastructure/compose/README.md).
 
 4. To enable **live e-INFRA CZ inference** and **read-only target Kubernetes collection**, add the Compose overlays documented in [infrastructure/compose/README.md](../infrastructure/compose/README.md):
 

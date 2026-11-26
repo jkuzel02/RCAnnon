@@ -119,4 +119,6 @@ def test_container_docs_changelog_dockerfile_labels_and_compose_image_var():
 
     compose = yaml.safe_load((REPO_ROOT / "compose.yaml").read_text(encoding="utf-8"))
     assert compose["services"]["api"]["image"] == "${RCANNON_IMAGE:-rcannon-api:local}"
-    assert compose["services"]["ui"]["image"] == "${RCANNON_IMAGE:-rcannon-api:local}"
+    assert compose["services"]["ui"]["image"].startswith(
+        "registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:"
+    )

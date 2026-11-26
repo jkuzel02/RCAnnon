@@ -330,30 +330,69 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
         assert "docker.sock" not in serialized
         assert "privileged: true" not in serialized
 
-    for svc_name in ("api", "ui"):
-        svc = base["services"][svc_name]
-        assert svc["user"] == "10001:10001"
-        assert svc["read_only"] is True
-        assert "ALL" in svc["cap_drop"]
-        assert "no-new-privileges:true" in svc["security_opt"]
-
     api_svc = base["services"]["api"]
     ui_svc = base["services"]["ui"]
+    mongo_svc = base["services"]["mongodb"]
+    bootstrap_svc = base["services"]["ui-bootstrap"]
 
+    assert api_svc["user"] == "10001:10001"
+    assert api_svc["read_only"] is True
+    assert "ALL" in api_svc["cap_drop"]
+    assert "no-new-privileges:true" in api_svc["security_opt"]
     assert "ports" not in api_svc
-    assert ui_svc["ports"] == ["127.0.0.1:${RCANNON_UI_PORT:-3080}:8080"]
-
     assert set(api_svc["networks"]) == {"ui_api", "api_egress", "telemetry_net"}
-    assert set(ui_svc["networks"]) == {"ui_edge", "ui_api", "ui_db"}
-
-    assert ui_svc["secrets"] == ["rcannon_ui_bearer_token"]
     assert set(api_svc["secrets"]) == {"rcannon_ui_bearer_token", "rcannon_operator_bearer_token"}
+
+    assert "@sha256:" in ui_svc["image"]
+    assert ui_svc["image"].startswith("registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:")
+    assert ui_svc["user"] == "1000:1000"
+    assert ui_svc["read_only"] is True
+    assert "ALL" in ui_svc["cap_drop"]
+    assert "no-new-privileges:true" in ui_svc["security_opt"]
+    assert ui_svc["ports"] == ["127.0.0.1:${RCANNON_UI_PORT:-3080}:3080"]
+    assert set(ui_svc["networks"]) == {"ui_edge", "ui_api", "ui_db"}
+    assert set(ui_svc["secrets"]) == {
+        "rcannon_ui_bearer_token",
+        "librechat_jwt_secret",
+        "librechat_jwt_refresh_secret",
+        "librechat_creds_key",
+        "librechat_creds_iv",
+    }
+    assert "rcannon_operator_bearer_token" not in ui_svc["secrets"]
+    assert "librechat_admin_password" not in ui_svc["secrets"]
+    ui_env = ui_svc["environment"]
+    assert ui_env["ENDPOINTS"] == "custom"
+    assert ui_env["ALLOW_EMAIL_LOGIN"] == "true"
+    assert ui_env["ALLOW_REGISTRATION"] == "false"
+    assert ui_env["ALLOW_SOCIAL_LOGIN"] == "false"
+    assert ui_env["ALLOW_SOCIAL_REGISTRATION"] == "false"
+    assert ui_env["SEARCH"] == "false"
+
+    assert mongo_svc["image"].startswith("mongo:8.0@sha256:")
+    assert "ports" not in mongo_svc
+    assert set(mongo_svc["networks"]) == {"ui_db"}
+    assert "ALL" in mongo_svc["cap_drop"]
+    assert "no-new-privileges:true" in mongo_svc["security_opt"]
+    assert "rcannon_mongo_data:/data/db" in mongo_svc["volumes"]
+
+    assert bootstrap_svc["profiles"] == ["bootstrap"]
+    assert bootstrap_svc["restart"] == "no"
+    assert bootstrap_svc["image"] == ui_svc["image"]
+    assert bootstrap_svc["user"] == "1000:1000"
+    assert bootstrap_svc["read_only"] is True
+    assert "ALL" in bootstrap_svc["cap_drop"]
+    assert "no-new-privileges:true" in bootstrap_svc["security_opt"]
+    assert "ports" not in bootstrap_svc
+    assert set(bootstrap_svc["networks"]) == {"ui_db"}
+    assert "librechat_admin_password" in bootstrap_svc["secrets"]
+    assert "rcannon_ui_bearer_token" not in bootstrap_svc["secrets"]
+    assert "rcannon_operator_bearer_token" not in bootstrap_svc["secrets"]
 
     assert base["networks"]["ui_api"]["internal"] is True
     assert base["networks"]["ui_db"]["internal"] is True
     assert base["networks"]["telemetry_net"]["internal"] is True
     assert "rcannon_api_data" in base["volumes"]
-    assert "rcannon_ui_data" in base["volumes"]
+    assert "rcannon_mongo_data" in base["volumes"]
 
     # Overlays scope LLM secret and kubeconfig mounts strictly to api
     assert list(einfra["services"].keys()) == ["api"]
