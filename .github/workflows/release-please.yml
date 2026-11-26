@@ -3,6 +3,33 @@ name: Release Please
 on:
   push:
     branches: [main]
+    paths:
+      - 'rca/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.python-version'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'compose.yaml'
+      - 'infrastructure/compose/compose.*.yaml'
+      - 'infrastructure/compose/librechat.yaml'
+      - 'infrastructure/compose/scripts/**'
+      - 'infrastructure/compose/.env.example'
+      - 'infrastructure/k8s/rbac/**'
+      - 'infrastructure/k8s/bootstrap.sh'
+      - 'infrastructure/k8s/kind/**'
+      - 'infrastructure/k8s/flux/**'
+      - 'prompts/base.md'
+      - 'prompts/optimal.md'
+      - 'prompts/mas/*.md'
+      - '!prompts/**/README.md'
+      - 'scenarios/**'
+      - '!scenarios/**/README.md'
+      - 'evaluation/**'
+      - '!evaluation/**/*.md'
+      - '.release-please-manifest.json'
+      - 'release-please-config.json'
+      - 'CHANGELOG.md'
   workflow_dispatch:
 
 permissions:
