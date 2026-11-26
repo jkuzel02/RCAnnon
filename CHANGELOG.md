@@ -4,6 +4,13 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.3](https://github.com/jkuzel02/RCAnnon/compare/0.1.2...0.1.3) (2026-11-26)
+
+
+### Features
+
+* **ui:** integrate LibreChat v0.8.9 and idempotent admin bootstrap ([415a573](https://github.com/jkuzel02/RCAnnon/commit/415a5737756f71b2c7e9f1f5581814d57567046b))
+
 ## [0.1.2](https://github.com/jkuzel02/RCAnnon/compare/0.1.1...0.1.2) (2026-11-26)
 
 
