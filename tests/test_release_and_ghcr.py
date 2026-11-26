@@ -164,3 +164,34 @@ def test_release_please_extra_files_sync_doc_versions():
             assert project_version in segment, (
                 f"Expected version {project_version!r} in marked segment of {rel_path}: {segment!r}"
             )
+
+
+def test_release_please_triggers_only_on_release_worthy_paths_and_commits():
+    config = json.loads((REPO_ROOT / "release-please-config.json").read_text(encoding="utf-8"))
+    sections = {entry["type"]: entry for entry in config["changelog-sections"]}
+    for non_release_type in ("docs", "chore", "ci", "test"):
+        assert sections[non_release_type].get("hidden") is True
+    for release_type in ("feat", "fix", "perf", "refactor"):
+        assert sections[release_type].get("hidden") is not True
+
+    wf = _load_workflow(REPO_ROOT / ".github/workflows/release-please.yml")
+    paths = wf["on"]["push"]["paths"]
+    for required_pattern in (
+        "rca/**",
+        "pyproject.toml",
+        "Dockerfile",
+        "compose.yaml",
+        "prompts/base.md",
+        "prompts/optimal.md",
+        "prompts/mas/*.md",
+        "!prompts/**/README.md",
+        "scenarios/**",
+        "!scenarios/**/README.md",
+        "evaluation/**",
+        "!evaluation/**/*.md",
+        ".release-please-manifest.json",
+        "CHANGELOG.md",
+    ):
+        assert required_pattern in paths
+    for excluded_pattern in ("docs/**", "README.md", "tests/**", ".github/**"):
+        assert excluded_pattern not in paths
