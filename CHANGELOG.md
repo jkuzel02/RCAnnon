@@ -4,6 +4,14 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.4](https://github.com/jkuzel02/RCAnnon/compare/0.1.3...0.1.4) (2026-11-26)
+
+
+### Documentation
+
+* refresh onboarding docs and add SECURITY.md and CODE_OF_CONDUCT.md ([210c505](https://github.com/jkuzel02/RCAnnon/commit/210c505dcb6b563675a0ff5eb3905d4f8717d014))
+* refresh onboarding docs and add SECURITY.md and CODE_OF_CONDUCT.md ([54032c4](https://github.com/jkuzel02/RCAnnon/commit/54032c4934c6e958a87f28af0454620b098075ae)), closes [#48](https://github.com/jkuzel02/RCAnnon/issues/48)
+
 ## [0.1.3](https://github.com/jkuzel02/RCAnnon/compare/0.1.2...0.1.3) (2026-11-26)
 
 
