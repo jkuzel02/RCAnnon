@@ -4,6 +4,14 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.6](https://github.com/jkuzel02/RCAnnon/compare/0.1.5...0.1.6) (2026-11-26)
+
+
+### Features
+
+* **k8s:** auto-wire read-only Kind kubeconfig and Compose override in bootstrap.sh ([73c9741](https://github.com/jkuzel02/RCAnnon/commit/73c9741c700b21ea851ae00c165bb9597ea3bcab))
+* **k8s:** auto-wire read-only Kind kubeconfig and Compose override in bootstrap.sh ([05f4009](https://github.com/jkuzel02/RCAnnon/commit/05f4009ce3aba2e5373ca78dce06ca23f5ab7391)), closes [#68](https://github.com/jkuzel02/RCAnnon/issues/68)
+
 ## [0.1.5](https://github.com/jkuzel02/RCAnnon/compare/0.1.4...0.1.5) (2026-11-26)
 
 
