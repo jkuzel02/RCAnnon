@@ -12,7 +12,7 @@ from unittest.mock import Mock
 import pytest
 
 from rca.contracts.provider import ProviderResponse
-from rca.providers import EInfraProvider, ProviderConfig, make_sync_complete
+from rca.providers import OpenAIProvider, ProviderConfig, make_sync_complete
 from rca.workflows import build_workflow
 from rca.workflows.mas import build_mas_workflow, extract_resource_limits
 
@@ -188,8 +188,8 @@ def test_mas_sequential_provider_cap_matches_parallel_payloads() -> None:
     assert seq_payloads == parallel_payloads
     assert seq_result["root-cause"] == parallel_result["root-cause"]
 
-    # Bound EInfraProvider callable carrying config.max_concurrency=1 also clamps concurrency.
-    provider = EInfraProvider(ProviderConfig(api_key="sk-test", max_concurrency=1))
+    # Bound OpenAIProvider callable carrying config.max_concurrency=1 also clamps concurrency.
+    provider = OpenAIProvider(ProviderConfig(api_key="sk-test", max_concurrency=1))
     provider_active = 0
     provider_max_active = 0
     provider_lock = threading.Lock()
@@ -370,7 +370,7 @@ def test_mas_invalid_specialist_blocks_coordinator(bad_specialist_output: str) -
 
 
 def test_mas_specialist_provider_failure_propagates_and_blocks_coordinator() -> None:
-    sentinel = TimeoutError("e-infra specialist timeout")
+    sentinel = TimeoutError("provider specialist timeout")
     called_prompts: list[str] = []
     lock = threading.Lock()
 

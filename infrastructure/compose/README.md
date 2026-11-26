@@ -97,13 +97,14 @@ docker compose --profile bootstrap run --rm ui-bootstrap
 
 Pin to an exact version tag (such as `0.1.3`), `:main` for rolling `main` builds, or an immutable manifest digest (`@sha256:...`). See [docs/container-image.md](../../docs/container-image.md) for the full container runtime contract, environment variables, and provenance verification. <!-- x-release-please-version -->
 
-## Enabling Live e-INFRA CZ Inference
+## Enabling Live OpenAI-Compatible API Inference
 
-1. Create `infrastructure/compose/secrets/llm_api_key.secret` containing your e-INFRA CZ API token (no trailing quotes). Startup fails closed if `RCANNON_PROVIDER_MODE=einfra` is active and the secret file is missing or empty.
-2. Start with the provider overlay:
+1. Create `infrastructure/compose/secrets/llm_api_key.secret` containing an API key for OpenAI or any OpenAI-compatible Chat Completions endpoint (no trailing quotes). Startup fails closed if `RCANNON_PROVIDER_MODE=openai` is active and the secret file is missing or empty.
+2. Optionally set `OPENAI_BASE_URL` (default `https://api.openai.com/v1`) and `OPENAI_MODEL` (default `gpt-4o-mini`) in `.env` or your shell.
+3. Start with the provider overlay:
 
 ```sh
-docker compose -f compose.yaml -f infrastructure/compose/compose.einfra.yaml up -d --wait
+docker compose -f compose.yaml -f infrastructure/compose/compose.openai.yaml up -d --wait
 ```
 
 ## Mounting Read-Only Target Kubeconfig and CA Files

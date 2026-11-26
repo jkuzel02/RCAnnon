@@ -27,7 +27,7 @@ uv run --no-sync pytest tests/test_api.py tests/test_api_storage.py tests/test_c
 uv run --no-project --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md README.update.md docs/*.md infrastructure/compose/README.md infrastructure/compose/secrets/README.md
 ```
 
-For live prompt smoke checks against e-INFRA CZ, see [evaluation/prompt_checks/README.md](../evaluation/prompt_checks/README.md).
+For live prompt smoke checks against an OpenAI-compatible API, see [evaluation/prompt_checks/README.md](../evaluation/prompt_checks/README.md).
 
 ## Workflow Contract (`rca.workflows.build_workflow`)
 

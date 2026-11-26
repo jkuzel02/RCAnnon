@@ -58,7 +58,7 @@ flowchart LR
     S -->|"base (1 call)"| W1["Baseline LangGraph"]
     S -->|"optimal (1 JSON call)"| W2["Optimal LangGraph"]
     S -->|"mas (3 specialists -> coordinator)"| W3["Parallel MAS LangGraph"]
-    W1 -->|"Shared Chat Completions adapter"| L["e-INFRA CZ or Mock Provider"]
+    W1 -->|"Shared Chat Completions adapter"| L["OpenAI-Compatible or Mock Provider"]
     W2 -->|"Shared Chat Completions adapter"| L
     L -->|"Validated RunResult/v1"| A
     A -->|"Safe Markdown (SSE)"| U
@@ -78,7 +78,7 @@ flowchart LR
 
 ## Connect a Live LLM & Real Kubernetes Cluster
 
-To diagnose incidents in a real cluster using live e-INFRA CZ (or compatible OpenAI) inference:
+To diagnose incidents in a real cluster using live OpenAI API (or any OpenAI-compatible endpoint) inference:
 
 1. Place your LLM API token in `infrastructure/compose/secrets/llm_api_key.secret` (no trailing quotes).
 2. Place a read-only kubeconfig (plus any relative CA/client certificates) in `infrastructure/compose/kubeconfig/config`. RCAnnon rejects `exec` plugins, `auth-provider` blocks, and `insecure-skip-tls-verify: true`.
@@ -87,7 +87,7 @@ To diagnose incidents in a real cluster using live e-INFRA CZ (or compatible Ope
 ```sh
 docker compose \
   -f compose.yaml \
-  -f infrastructure/compose/compose.einfra.yaml \
+  -f infrastructure/compose/compose.openai.yaml \
   -f infrastructure/compose/compose.kube.yaml \
   up -d --wait
 ```

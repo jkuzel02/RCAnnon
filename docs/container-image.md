@@ -34,12 +34,14 @@ Prefer Docker secret files (`*_FILE`) mounted under `/run/secrets/` rather than 
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `RCANNON_PROVIDER_MODE` | No | `einfra` | `einfra` for live LLM calls or `mock` for offline smoke testing |
+| `RCANNON_PROVIDER_MODE` | No | `openai` | `openai` for live OpenAI-compatible API calls or `mock` for offline smoke testing |
 | `RCANNON_UI_BEARER_TOKEN_FILE` | Yes | — | Path to UI service bearer token (`RCANNON_UI_BEARER_TOKEN` alternative) |
 | `RCANNON_OPERATOR_BEARER_TOKEN_FILE` | Yes | — | Path to distinct operator bearer token (`RCANNON_OPERATOR_BEARER_TOKEN` alternative) |
 | `RCANNON_ALLOWED_SCOPES` | No | `{}` | JSON map of allowlisted cluster aliases to allowed namespaces |
 | `RCANNON_DB_PATH` | No | `rcannon_api.db` | SQLite database path (set `/var/lib/rcannon/rcannon.db` in containers) |
-| `LLM_AI_EINFRA_API_KEY_FILE` | When `einfra` | — | Path to e-INFRA CZ API key (`LLM_AI_EINFRA_API_KEY` alternative) |
+| `OPENAI_API_KEY_FILE` | When `openai` | — | Path to OpenAI-compatible API key (`OPENAI_API_KEY` alternative) |
+| `OPENAI_BASE_URL` | No | `https://api.openai.com/v1` | Base URL for OpenAI or any OpenAI-compatible Chat Completions endpoint |
+| `OPENAI_MODEL` | No | `gpt-4o-mini` | Model ID passed to `/v1/chat/completions` |
 | `RCANNON_KUBECONFIG_PATH` | No | — | Read-only kubeconfig mount path (for example `/etc/rcannon/kubeconfig/config`) |
 | `RCANNON_KUBE_CONTEXT` | With kubeconfig | — | Named kubeconfig context (`exec`, `auth-provider`, and `insecure-skip-tls-verify` are rejected) |
 | `RCANNON_TARGET_ALIAS` | No | `lab` | Target alias matching `RCANNON_ALLOWED_SCOPES` |
@@ -56,7 +58,7 @@ RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:latest docker compose up -d --no-build --
 docker compose --profile bootstrap run --rm ui-bootstrap
 ```
 
-See [infrastructure/compose/README.md](../infrastructure/compose/README.md) for live e-INFRA CZ and read-only kubeconfig overlays.
+See [infrastructure/compose/README.md](../infrastructure/compose/README.md) for live OpenAI-compatible API and read-only kubeconfig overlays.
 
 ### Hardened Standalone Container (`mock` mode)
 
@@ -81,7 +83,7 @@ docker run --rm \
 You are not limited to Docker Compose. The published `ghcr.io/jkuzel02/rcannon` OCI image runs cleanly inside a **separate management or operations Kubernetes cluster** while keeping the runtime isolated from the failing target cluster's blast radius:
 
 - Run the API pod with non-root security settings (`runAsUser: 10001`, `runAsGroup: 10001`, `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`, `capabilities: { drop: ["ALL"] }`) and a persistent volume mounted at `/var/lib/rcannon`.
-- Provide `RCANNON_UI_BEARER_TOKEN_FILE`, `RCANNON_OPERATOR_BEARER_TOKEN_FILE`, `LLM_AI_EINFRA_API_KEY_FILE`, and read-only target cluster kubeconfigs (`RCANNON_KUBECONFIG_PATH`) via mounted Kubernetes `Secret` volumes (`readOnly: true`).
+- Provide `RCANNON_UI_BEARER_TOKEN_FILE`, `RCANNON_OPERATOR_BEARER_TOKEN_FILE`, `OPENAI_API_KEY_FILE`, and read-only target cluster kubeconfigs (`RCANNON_KUBECONFIG_PATH`) via mounted Kubernetes `Secret` volumes (`readOnly: true`).
 - Deploy LibreChat (`v0.8.9`) and MongoDB (`8.0`) on cluster-internal Services in that management cluster, pointing `librechat.yaml` at the internal `api` Service URL (`http://<rcannon-api-service>:8000/v1`) and disabling self-registration.
 
 ## Supply-Chain Provenance Verification

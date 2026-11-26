@@ -73,7 +73,7 @@ def test_optimal_rejects_malformed_or_schema_invalid_outputs_without_retry(
 
 
 def test_optimal_propagates_provider_errors_unchanged() -> None:
-    sentinel = TimeoutError("e-infra deadline exceeded")
+    sentinel = TimeoutError("provider deadline exceeded")
     complete = Mock(side_effect=sentinel)
     graph = build_workflow("optimal", complete=complete)
 

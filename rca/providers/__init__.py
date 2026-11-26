@@ -9,7 +9,7 @@ from .config import (
     DEFAULT_TIMEOUT_SECONDS,
     ProviderConfig,
 )
-from .einfra import EInfraProvider, make_sync_complete
+from .openai import OpenAIProvider, make_sync_complete
 
 __all__ = [
     "DEFAULT_BASE_URL",
@@ -18,7 +18,7 @@ __all__ = [
     "DEFAULT_MODEL",
     "DEFAULT_TEMPERATURE",
     "DEFAULT_TIMEOUT_SECONDS",
-    "EInfraProvider",
+    "OpenAIProvider",
     "ProviderConfig",
     "make_sync_complete",
 ]

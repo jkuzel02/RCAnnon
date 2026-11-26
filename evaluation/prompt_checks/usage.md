@@ -12,16 +12,14 @@ For quick local live checks from inside `evaluation/prompt_checks/`, see [README
 These checks use the real cases and substitute deterministic model responses.
 GitHub Actions runs them on relevant pull requests and pushes to `main`.
 
-## Live checks on e-INFRA CZ
+## Live checks on OpenAI-compatible APIs
 
-Configure the GitHub Actions secret `LLM_AI_EINFRA_API_KEY` using an API key
-authorized for the workflow. To configure the live 3-model matrix (DeepSeek,
-Qwen, Mistral), set the repository variable `LLM_AI_EINFRA_MODELS` to a
-comma-separated list of active e-INFRA model IDs (defaults to
-`deepseek-v4.1-flash,qwen3.8-27b,mistral-medium-3.5`). For single-model runs,
-`LLM_AI_EINFRA_MODEL` overrides the evaluator's default (`deepseek-v4.1-flash`).
-See the [e-INFRA CZ API guide](https://docs.cerit-sc.cz/en/docs/ai-as-a-service/ai-api)
-and [LLM models catalog](https://docs.cerit.io/en/docs/ai-as-a-service/llm-models).
+Configure the GitHub Actions secret `OPENAI_API_KEY` using an API key for OpenAI
+or any OpenAI-compatible `/v1/chat/completions` endpoint (set `OPENAI_BASE_URL`
+to override the default `https://api.openai.com/v1`, and `OPENAI_MODEL` to
+override the evaluator's default `gpt-4o-mini`). To configure a multi-model
+matrix, set repository variable `OPENAI_MODELS` to a comma-separated list of
+model IDs.
 
 In GitHub Actions, open **RCA prompt checks** and select **Run workflow**.
 The default `case` input runs case `01` (clear it to run all 16 cases), and the
@@ -29,10 +27,9 @@ optional `models` input overrides the comma-separated model matrix for that run.
 Models execute sequentially (`max-parallel: 1`, `fail-fast: false`) and upload
 one `rca-prompt-results-<model>` artifact per model. For automatic live runs on
 relevant pushes to `main`, set the repository variable `RCA_LIVE_PROMPT_CHECKS`
-to `true`. A full 16-case run makes up to 96 sequential requests per model.
-Check the
-[provider's benchmarking guidance](https://docs.cerit-sc.cz/en/docs/ai-as-a-service/chat-ai#shared-resources-and-benchmarking)
-before running the full benchmark.
+to `true`. A full 16-case run makes up to 96 sequential requests per model; keep
+provider rate limits and token budgets in mind before running the full
+benchmark.
 
 Locally, supply the API key via `.env` (or the environment) and run from the
 repository root for CLI-only output (pass `--output <path>` only when you want

@@ -17,7 +17,7 @@ from rca.evidence import KubeconfigSecurityError
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 COMPOSE_FILE = REPO_ROOT / "compose.yaml"
-COMPOSE_EINFRA_FILE = REPO_ROOT / "infrastructure" / "compose" / "compose.einfra.yaml"
+COMPOSE_OPENAI_FILE = REPO_ROOT / "infrastructure" / "compose" / "compose.openai.yaml"
 COMPOSE_KUBE_FILE = REPO_ROOT / "infrastructure" / "compose" / "compose.kube.yaml"
 DOCKERFILE = REPO_ROOT / "Dockerfile"
 DOCKERIGNORE = REPO_ROOT / ".dockerignore"
@@ -132,7 +132,10 @@ def test_server_factory_fails_closed_on_missing_or_invalid_secrets_and_kubeconfi
     with pytest.raises(ValueError):
         create_app_from_env({**env, "RCANNON_PROVIDER_MODE": "invalid-mode"})
 
-    with pytest.raises(ValueError, match="Missing e-INFRA API key"):
+    with pytest.raises(ValueError, match="Missing OpenAI API key"):
+        create_app_from_env({**env, "RCANNON_PROVIDER_MODE": "openai"})
+
+    with pytest.raises(ValueError, match="Unsupported RCANNON_PROVIDER_MODE"):
         create_app_from_env({**env, "RCANNON_PROVIDER_MODE": "einfra"})
 
     missing_kube = tmp_path / "missing-kubeconfig"
@@ -322,10 +325,10 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
         assert required_ignore in dockerignore_lines
 
     base = yaml.safe_load(COMPOSE_FILE.read_text(encoding="utf-8"))
-    einfra = yaml.safe_load(COMPOSE_EINFRA_FILE.read_text(encoding="utf-8"))
+    openai_overlay = yaml.safe_load(COMPOSE_OPENAI_FILE.read_text(encoding="utf-8"))
     kube = yaml.safe_load(COMPOSE_KUBE_FILE.read_text(encoding="utf-8"))
 
-    for doc in (base, einfra, kube):
+    for doc in (base, openai_overlay, kube):
         serialized = yaml.safe_dump(doc)
         assert "docker.sock" not in serialized
         assert "privileged: true" not in serialized
@@ -395,6 +398,11 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     assert "rcannon_mongo_data" in base["volumes"]
 
     # Overlays scope LLM secret and kubeconfig mounts strictly to api
-    assert list(einfra["services"].keys()) == ["api"]
+    assert list(openai_overlay["services"].keys()) == ["api"]
+    assert openai_overlay["services"]["api"]["environment"]["RCANNON_PROVIDER_MODE"] == "openai"
+    assert (
+        openai_overlay["services"]["api"]["environment"]["OPENAI_API_KEY_FILE"]
+        == "/run/secrets/rcannon_llm_api_key"
+    )
     assert list(kube["services"].keys()) == ["api"]
     assert any(vol.endswith(":ro") for vol in kube["services"]["api"]["volumes"])

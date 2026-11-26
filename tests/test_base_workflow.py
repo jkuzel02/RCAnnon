@@ -31,7 +31,7 @@ def test_base_workflow_preserves_exact_text_and_partial_context() -> None:
 
 
 def test_base_workflow_via_registry_propagates_provider_error_unchanged() -> None:
-    sentinel = RuntimeError("upstream e-infra unavailable")
+    sentinel = RuntimeError("upstream provider unavailable")
     complete = Mock(side_effect=sentinel)
 
     graph = build_workflow("base", complete=complete)

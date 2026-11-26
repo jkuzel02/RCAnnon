@@ -1,0 +1,15 @@
+services:
+  api:
+    secrets:
+      - rcannon_llm_api_key
+    environment:
+      RCANNON_PROVIDER_MODE: openai
+      OPENAI_API_KEY_FILE: /run/secrets/rcannon_llm_api_key
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_TIMEOUT_SECONDS: ${OPENAI_TIMEOUT_SECONDS:-60}
+      OPENAI_DEADLINE_SECONDS: ${OPENAI_DEADLINE_SECONDS:-90}
+
+secrets:
+  rcannon_llm_api_key:
+    file: ${RCANNON_LLM_API_KEY_SECRET_FILE:-./infrastructure/compose/secrets/llm_api_key.secret}

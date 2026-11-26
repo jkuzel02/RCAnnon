@@ -1,4 +1,4 @@
-"""Shared e-INFRA CZ Chat Completions provider adapter."""
+"""Shared OpenAI-compatible Chat Completions provider adapter."""
 
 from __future__ import annotations
 
@@ -77,8 +77,8 @@ def _extract_token_counts(message: AIMessage) -> tuple[int | None, int | None, i
     return None, None, None
 
 
-class EInfraProvider:
-    """Thread-safe Chat Completions adapter using LangChain ChatOpenAI."""
+class OpenAIProvider:
+    """Thread-safe OpenAI-compatible Chat Completions adapter using LangChain ChatOpenAI."""
 
     def __init__(
         self,
@@ -140,39 +140,39 @@ class EInfraProvider:
         if isinstance(error, (AuthenticationError, PermissionDeniedError)):
             status = getattr(error, "status_code", None)
             return (
-                ProviderAuthError(f"e-INFRA authentication failed (HTTP {status})."),
+                ProviderAuthError(f"OpenAI API authentication failed (HTTP {status})."),
                 False,
             )
         if isinstance(error, RateLimitError):
             return (
-                ProviderRateLimitError("e-INFRA rate limit exceeded (HTTP 429)."),
+                ProviderRateLimitError("OpenAI API rate limit exceeded (HTTP 429)."),
                 True,
             )
         if isinstance(error, (APITimeoutError, TimeoutError)):
             return (
-                ProviderTimeoutError("e-INFRA request timed out."),
+                ProviderTimeoutError("OpenAI API request timed out."),
                 True,
             )
         if isinstance(error, InternalServerError):
             status = getattr(error, "status_code", 500)
             return (
-                ProviderError(f"e-INFRA server error (HTTP {status})."),
+                ProviderError(f"OpenAI API server error (HTTP {status})."),
                 True,
             )
         if isinstance(error, APIConnectionError):
             return (
-                ProviderError("e-INFRA connection failed."),
+                ProviderError("OpenAI API connection failed."),
                 True,
             )
         if isinstance(error, APIStatusError):
             status = getattr(error, "status_code", None)
             retryable = status in RETRYABLE_STATUS_CODES
             if status in {401, 403}:
-                return ProviderAuthError(f"e-INFRA authentication failed (HTTP {status})."), False
+                return ProviderAuthError(f"OpenAI API authentication failed (HTTP {status})."), False
             if status == 429:
-                return ProviderRateLimitError("e-INFRA rate limit exceeded (HTTP 429)."), True
+                return ProviderRateLimitError("OpenAI API rate limit exceeded (HTTP 429)."), True
             return (
-                ProviderError(f"e-INFRA API returned HTTP {status}."),
+                ProviderError(f"OpenAI API returned HTTP {status}."),
                 retryable,
             )
         if isinstance(error, ProviderError):
@@ -212,7 +212,7 @@ class EInfraProvider:
             remaining = deadline - self._clock()
             if remaining <= 0:
                 raise ProviderTimeoutError(
-                    f"e-INFRA request exceeded overall deadline ({self._config.deadline_seconds}s)."
+                    f"OpenAI API request exceeded overall deadline ({self._config.deadline_seconds}s)."
                 )
 
             per_call_timeout = min(self._config.timeout_seconds, remaining)
@@ -227,7 +227,7 @@ class EInfraProvider:
                 remaining_after = deadline - self._clock()
                 if remaining_after <= 0:
                     raise ProviderTimeoutError(
-                        f"e-INFRA request exceeded overall deadline "
+                        f"OpenAI API request exceeded overall deadline "
                         f"({self._config.deadline_seconds}s)."
                     ) from None
                 delay = min(
@@ -283,6 +283,6 @@ class EInfraProvider:
         return self.complete_response(prompt_path, payload).text
 
 
-def make_sync_complete(provider: EInfraProvider) -> CompleteFn:
+def make_sync_complete(provider: OpenAIProvider) -> CompleteFn:
     """Return a thread-safe complete(prompt_path, payload) -> str callable."""
     return provider.complete

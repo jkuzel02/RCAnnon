@@ -1,4 +1,4 @@
-"""Evaluate the repository's RCA prompts directly against e-INFRA CZ."""
+"""Evaluate the repository's RCA prompts against an OpenAI-compatible Chat Completions API."""
 
 import argparse
 import json
@@ -50,13 +50,21 @@ except ModuleNotFoundError:
 
 
 PROJECT = Path(__file__).resolve().parents[2]
-ENDPOINT = "https://llm.ai.e-infra.cz/v1/chat/completions"
-DEFAULT_MODEL = "deepseek-v4.1-flash"
+DEFAULT_BASE_URL = "https://api.openai.com/v1"
+ENDPOINT = f"{DEFAULT_BASE_URL}/chat/completions"
+DEFAULT_MODEL = "gpt-4o-mini"
 SPECIALISTS = {
     "k8s-config-events": ("resources", "events"),
     "logs-connectivity": ("logs", "checks"),
     "metrics-telemetry": ("metrics", "time_window"),
 }
+
+
+def _resolve_endpoint(base_url: str) -> str:
+    cleaned = base_url.strip().rstrip("/")
+    if cleaned.endswith("/chat/completions"):
+        return cleaned
+    return f"{cleaned}/chat/completions"
 
 
 def load_inputs():
@@ -91,9 +99,9 @@ def load_inputs():
     return prompts, cases, expectations
 
 
-def complete(model, api_key, prompt, payload):
+def complete(model, api_key, prompt, payload, *, endpoint=ENDPOINT):
     request = Request(
-        ENDPOINT,
+        endpoint,
         data=json.dumps(
             {
                 "model": model,
@@ -113,16 +121,16 @@ def complete(model, api_key, prompt, payload):
             body = json.load(response)
     except HTTPError as error:
         if error.code in {401, 403, 404, 429}:
-            raise SystemExit(f"e-INFRA API returned HTTP {error.code}; stopping the run.") from None
-        raise ValueError(f"e-INFRA API returned HTTP {error.code}.") from None
+            raise SystemExit(f"OpenAI API returned HTTP {error.code}; stopping the run.") from None
+        raise ValueError(f"OpenAI API returned HTTP {error.code}.") from None
     except (URLError, TimeoutError):
-        raise ValueError("The e-INFRA request failed or timed out.") from None
+        raise ValueError("The OpenAI API request failed or timed out.") from None
 
     try:
         choice = body["choices"][0]
         content = choice["message"]["content"]
     except (KeyError, IndexError, TypeError):
-        raise ValueError("The e-INFRA response has no completion content.") from None
+        raise ValueError("The OpenAI API response has no completion content.") from None
     if choice.get("finish_reason") != "stop":
         raise ValueError("The model did not finish normally.")
     if not isinstance(content, str) or not content.strip():
@@ -241,10 +249,13 @@ def main(argv=None):
         help="Optional path to write JSON results. Omit for CLI-only output.",
     )
     args = parser.parse_args(argv)
-    api_key = os.environ.get("LLM_AI_EINFRA_API_KEY", "").strip()
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if not api_key:
-        parser.error("Set LLM_AI_EINFRA_API_KEY to an e-INFRA API key.")
-    model = os.environ.get("LLM_AI_EINFRA_MODEL", "").strip() or DEFAULT_MODEL
+        parser.error("Set OPENAI_API_KEY to an OpenAI API key.")
+
+    base_url = os.environ.get("OPENAI_BASE_URL", "").strip() or DEFAULT_BASE_URL
+    endpoint = _resolve_endpoint(base_url)
+    model = os.environ.get("OPENAI_MODEL", "").strip() or DEFAULT_MODEL
 
     prompts, cases, expectations = load_inputs()
     selected = list(dict.fromkeys(args.case or cases))
@@ -252,7 +263,7 @@ def main(argv=None):
         parser.error(f"Unknown case IDs: {', '.join(unknown)}")
 
     def send(prompt, payload):
-        return complete(model, api_key, prompts[prompt], payload)
+        return complete(model, api_key, prompts[prompt], payload, endpoint=endpoint)
 
     results = []
     try:

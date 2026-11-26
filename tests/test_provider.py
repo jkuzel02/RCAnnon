@@ -1,4 +1,4 @@
-"""Local mock HTTP tests for the shared e-INFRA provider adapter."""
+"""Local mock HTTP tests for the shared OpenAI-compatible provider adapter."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from rca.contracts.provider import (
     ProviderResponseError,
     ProviderTimeoutError,
 )
-from rca.providers import EInfraProvider, ProviderConfig, make_sync_complete
+from rca.providers import OpenAIProvider, ProviderConfig, make_sync_complete
 
 SYNTHETIC_SECRET = "sk-synthetic-secret-do-not-leak-987654321"
 
@@ -90,7 +90,7 @@ def _ok_completion(
     usage: dict[str, int] | None = None,
     finish_reason: str = "stop",
     request_id: str = "chatcmpl-test-123",
-    model: str = "deepseek-v4.1-flash",
+    model: str = "gpt-4o-mini",
 ) -> dict[str, Any]:
     body: dict[str, Any] = {
         "id": request_id,
@@ -114,28 +114,37 @@ def test_config_from_env_aliases_secret_file_and_redaction(tmp_path: Path) -> No
     secret_file = tmp_path / "api.key"
     secret_file.write_text(f"{SYNTHETIC_SECRET}\n", encoding="utf-8")
 
-    cfg = ProviderConfig.from_env(
+    primary_cfg = ProviderConfig.from_env(
         {
-            "LLM_AI_EINFRA_API_KEY_FILE": str(secret_file),
-            "LLM_AI_EINFRA_MODEL": "qwen3.8-27b",
-            "LLM_AI_EINFRA_MAX_RETRIES": "2",
-            "LLM_AI_EINFRA_MAX_OUTPUT_TOKENS": "1024",
-            "LLM_AI_EINFRA_MAX_CONTEXT_CHARS": "20000",
-            "LLM_AI_EINFRA_MAX_CONCURRENCY": "1",
+            "OPENAI_API_KEY": SYNTHETIC_SECRET,
+            "OPENAI_MAX_RETRIES": "1",
         }
     )
-    assert cfg.api_key == SYNTHETIC_SECRET
-    assert cfg.model == "qwen3.8-27b"
-    assert cfg.max_retries == 2
-    assert cfg.max_output_tokens == 1024
-    assert cfg.max_context_chars == 20000
-    assert cfg.max_concurrency == 1
-    assert SYNTHETIC_SECRET not in repr(cfg)
+    assert primary_cfg.api_key == SYNTHETIC_SECRET
+    assert primary_cfg.base_url == "https://api.openai.com/v1"
+    assert primary_cfg.model == "gpt-4o-mini"
+    assert primary_cfg.max_retries == 1
 
-    alias_cfg = ProviderConfig.from_env({"EINFRA_AI_TOKEN": SYNTHETIC_SECRET})
-    assert alias_cfg.api_key == SYNTHETIC_SECRET
-    assert alias_cfg.max_retries == 0
-    assert alias_cfg.max_concurrency is None
+    primary_file_cfg = ProviderConfig.from_env(
+        {
+            "OPENAI_API_KEY_FILE": str(secret_file),
+            "OPENAI_BASE_URL": "http://localhost:11434/v1/",
+            "OPENAI_MODEL": "llama3.1:8b",
+            "OPENAI_MAX_OUTPUT_TOKENS": "1024",
+            "OPENAI_MAX_CONTEXT_CHARS": "20000",
+            "OPENAI_MAX_CONCURRENCY": "2",
+        }
+    )
+    assert primary_file_cfg.api_key == SYNTHETIC_SECRET
+    assert primary_file_cfg.base_url == "http://localhost:11434/v1"
+    assert primary_file_cfg.model == "llama3.1:8b"
+    assert primary_file_cfg.max_output_tokens == 1024
+    assert primary_file_cfg.max_context_chars == 20000
+    assert primary_file_cfg.max_concurrency == 2
+    assert SYNTHETIC_SECRET not in repr(primary_file_cfg)
+
+    with pytest.raises(ValueError, match="Missing OpenAI API key"):
+        ProviderConfig.from_env({})
 
     with pytest.raises(ValueError, match="max_concurrency"):
         ProviderConfig(api_key=SYNTHETIC_SECRET, max_concurrency=0)
@@ -153,12 +162,12 @@ def test_successful_completion_with_usage_and_sync_adapter() -> None:
         )
 
     with _MockServer(respond) as server:
-        provider = EInfraProvider(
+        provider = OpenAIProvider(
             ProviderConfig(api_key=SYNTHETIC_SECRET, base_url=server.base_url)
         )
         response = provider.complete_response("base.md", {"context": {"incident": "OOM"}})
         assert response.text == "Memory limit 64Mi is below the 128Mi working set."
-        assert response.model == "deepseek-v4.1-flash"
+        assert response.model == "gpt-4o-mini"
         assert response.request_id is not None
         assert response.attempts == 1
         assert response.duration_seconds >= 0.0
@@ -178,7 +187,7 @@ def test_nullable_token_totals_are_never_invented() -> None:
         return 200, _ok_completion("Diagnosis without usage block.", usage=None), 0.0
 
     with _MockServer(respond) as server:
-        provider = EInfraProvider(
+        provider = OpenAIProvider(
             ProviderConfig(api_key=SYNTHETIC_SECRET, base_url=server.base_url)
         )
         response = provider.complete_response("base.md", {"context": {}})
@@ -198,7 +207,7 @@ def test_auth_failure_does_not_retry_and_redacts_secret(status_code: int) -> Non
         )
 
     with _MockServer(respond) as server:
-        provider = EInfraProvider(
+        provider = OpenAIProvider(
             ProviderConfig(
                 api_key=SYNTHETIC_SECRET,
                 base_url=server.base_url,
@@ -218,7 +227,7 @@ def test_throttling_respects_default_zero_retries_and_succeeds_when_enabled() ->
         return 429, {"error": {"message": "Rate limit exceeded"}}, 0.0
 
     with _MockServer(always_429) as server:
-        provider = EInfraProvider(
+        provider = OpenAIProvider(
             ProviderConfig(api_key=SYNTHETIC_SECRET, base_url=server.base_url)
         )
         with pytest.raises(ProviderRateLimitError):
@@ -231,7 +240,7 @@ def test_throttling_respects_default_zero_retries_and_succeeds_when_enabled() ->
         return 200, _ok_completion("Recovered after retry."), 0.0
 
     with _MockServer(flaky_429) as server:
-        provider = EInfraProvider(
+        provider = OpenAIProvider(
             ProviderConfig(
                 api_key=SYNTHETIC_SECRET,
                 base_url=server.base_url,
@@ -250,7 +259,7 @@ def test_server_failure_respects_retry_cap() -> None:
         return 503, {"error": {"message": "Service unavailable"}}, 0.0
 
     with _MockServer(always_503) as server:
-        provider = EInfraProvider(
+        provider = OpenAIProvider(
             ProviderConfig(
                 api_key=SYNTHETIC_SECRET,
                 base_url=server.base_url,
@@ -268,7 +277,7 @@ def test_timeout_and_deadline_enforced() -> None:
         return 200, _ok_completion("Too late."), 0.5
 
     with _MockServer(slow) as server:
-        provider = EInfraProvider(
+        provider = OpenAIProvider(
             ProviderConfig(
                 api_key=SYNTHETIC_SECRET,
                 base_url=server.base_url,
@@ -296,7 +305,7 @@ def test_malformed_empty_or_truncated_output_raises_without_retry(payload: Any) 
         return 200, payload, 0.0
 
     with _MockServer(respond) as server:
-        provider = EInfraProvider(
+        provider = OpenAIProvider(
             ProviderConfig(
                 api_key=SYNTHETIC_SECRET,
                 base_url=server.base_url,
@@ -310,7 +319,7 @@ def test_malformed_empty_or_truncated_output_raises_without_retry(payload: Any) 
 
 
 def test_prompt_allowlist_and_context_limit() -> None:
-    provider = EInfraProvider(
+    provider = OpenAIProvider(
         ProviderConfig(
             api_key=SYNTHETIC_SECRET,
             base_url="http://127.0.0.1:9/v1",
@@ -332,7 +341,7 @@ def test_provider_is_thread_safe_for_parallel_calls() -> None:
 
     with _MockServer(respond) as server:
         complete = make_sync_complete(
-            EInfraProvider(ProviderConfig(api_key=SYNTHETIC_SECRET, base_url=server.base_url))
+            OpenAIProvider(ProviderConfig(api_key=SYNTHETIC_SECRET, base_url=server.base_url))
         )
         with ThreadPoolExecutor(max_workers=4) as pool:
             results = list(pool.map(lambda n: complete("base.md", {"n": n}), range(8)))
