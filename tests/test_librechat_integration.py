@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -14,6 +15,9 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LIBRECHAT_CONFIG = REPO_ROOT / "infrastructure" / "compose" / "librechat.yaml"
 INIT_SECRETS_SCRIPT = REPO_ROOT / "infrastructure" / "compose" / "scripts" / "init-dev-secrets.sh"
+INIT_COMPOSE_SECRETS_SCRIPT = (
+    REPO_ROOT / "infrastructure" / "compose" / "scripts" / "init-compose-secrets.py"
+)
 ENTRYPOINT_SCRIPT = REPO_ROOT / "infrastructure" / "compose" / "scripts" / "librechat-entrypoint.sh"
 BOOTSTRAP_SCRIPT = REPO_ROOT / "infrastructure" / "compose" / "scripts" / "bootstrap-librechat-admin.sh"
 
@@ -347,3 +351,85 @@ Path({str(state_file)!r}).write_text(json.dumps({{
         capture_output=True,
     )
     assert bad_email.returncode != 0
+
+
+def test_init_compose_secrets_isolates_volumes_is_idempotent_and_validates_password(tmp_path: Path):
+    seed_dir = tmp_path / "seed"
+    seed_dir.mkdir()
+    api_dir = tmp_path / "out" / "api"
+    ui_dir = tmp_path / "out" / "ui"
+    bootstrap_dir = tmp_path / "out" / "bootstrap"
+
+    env = {
+        **os.environ,
+        "SEED_DIR": str(seed_dir),
+        "API_OUT_DIR": str(api_dir),
+        "UI_OUT_DIR": str(ui_dir),
+        "BOOTSTRAP_OUT_DIR": str(bootstrap_dir),
+        "SKIP_CHOWN": "1",
+        "LIBRECHAT_ADMIN_PASSWORD": "CustomCanaryPassword123",
+    }
+
+    first = subprocess.run(
+        [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT)],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    api_files = {p.name for p in api_dir.iterdir()}
+    ui_files = {p.name for p in ui_dir.iterdir()}
+    bootstrap_files = {p.name for p in bootstrap_dir.iterdir()}
+
+    assert api_files == {"rcannon_ui_bearer_token", "rcannon_operator_bearer_token"}
+    assert ui_files == {
+        "rcannon_ui_bearer_token",
+        "librechat_jwt_secret",
+        "librechat_jwt_refresh_secret",
+        "librechat_creds_key",
+        "librechat_creds_iv",
+    }
+    assert bootstrap_files == {
+        "librechat_admin_password",
+        "librechat_jwt_secret",
+        "librechat_jwt_refresh_secret",
+        "librechat_creds_key",
+        "librechat_creds_iv",
+    }
+
+    ui_tok = (api_dir / "rcannon_ui_bearer_token").read_text(encoding="utf-8").strip()
+    op_tok = (api_dir / "rcannon_operator_bearer_token").read_text(encoding="utf-8").strip()
+    assert ui_tok == (ui_dir / "rcannon_ui_bearer_token").read_text(encoding="utf-8").strip()
+    assert ui_tok != op_tok
+    assert (
+        (bootstrap_dir / "librechat_admin_password").read_text(encoding="utf-8").strip()
+        == "CustomCanaryPassword123"
+    )
+    for secret_val in (ui_tok, op_tok, "CustomCanaryPassword123"):
+        assert secret_val not in first.stdout
+        assert secret_val not in first.stderr
+
+    # Re-run preserves existing generated secrets
+    jwt_before = (ui_dir / "librechat_jwt_secret").read_text(encoding="utf-8").strip()
+    subprocess.run(
+        [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT)],
+        env={k: v for k, v in env.items() if k != "LIBRECHAT_ADMIN_PASSWORD"},
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    assert (api_dir / "rcannon_ui_bearer_token").read_text(encoding="utf-8").strip() == ui_tok
+    assert (ui_dir / "librechat_jwt_secret").read_text(encoding="utf-8").strip() == jwt_before
+
+    # Short or multiline LIBRECHAT_ADMIN_PASSWORD fails closed without echoing
+    for bad_pw in ("shortpw", "line1\nline2-long-enough"):
+        failed = subprocess.run(
+            [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT)],
+            env={**env, "LIBRECHAT_ADMIN_PASSWORD": bad_pw},
+            text=True,
+            capture_output=True,
+        )
+        assert failed.returncode != 0
+        assert bad_pw not in failed.stdout
+        assert bad_pw not in failed.stderr

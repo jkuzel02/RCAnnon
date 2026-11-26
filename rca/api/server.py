@@ -20,7 +20,7 @@ from rca.contracts.schemas import PROMPT_ALLOWLIST
 from rca.evidence import KubernetesEvidenceCollector, TargetClusterConfig, build_collector_fn
 from rca.providers import OpenAIProvider, ProviderConfig
 
-_VALID_PROVIDER_MODES = frozenset({"openai", "mock"})
+_VALID_PROVIDER_MODES = frozenset({"auto", "openai", "mock"})
 
 
 def _read_optional_secret(
@@ -107,10 +107,21 @@ def _resolve_provider(env: Mapping[str, str]) -> tuple[str, CompleteFn, tuple[st
     mode = env.get("RCANNON_PROVIDER_MODE", "openai").strip().lower() or "openai"
     if mode not in _VALID_PROVIDER_MODES:
         raise ValueError(
-            f"Unsupported RCANNON_PROVIDER_MODE {mode!r}. Expected 'openai' or 'mock'."
+            f"Unsupported RCANNON_PROVIDER_MODE {mode!r}. Expected 'auto', 'openai', or 'mock'."
         )
     if mode == "mock":
         return mode, mock_complete, ()
+    if mode == "auto":
+        has_key = bool(env.get("OPENAI_API_KEY", "").strip())
+        key_file_raw = env.get("OPENAI_API_KEY_FILE", "").strip()
+        if key_file_raw:
+            key_file = Path(key_file_raw)
+            if not key_file.is_file():
+                raise ValueError("Secret file referenced by OPENAI_API_KEY_FILE does not exist.")
+            has_key = has_key or bool(key_file.read_text(encoding="utf-8").strip())
+        if not has_key:
+            return "mock", mock_complete, ()
+        mode = "openai"
 
     provider_cfg = ProviderConfig.from_env(env)
     provider = OpenAIProvider(provider_cfg)

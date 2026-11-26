@@ -1,114 +1,82 @@
-# User Guide — Getting Started with RCAnnon
+# Getting Started with RCAnnon
 
-**RCAnnon** diagnoses Kubernetes incidents from outside the target cluster's failure domain—whether on a standalone Docker Compose host or inside a separate management Kubernetes cluster—using an authenticated **LibreChat** web UI, a read-only Kubernetes evidence collector, and three selectable LangGraph diagnostic workflows (`rcannon-base`, `rcannon-optimal`, and `rcannon-mas`).
+Two commands get you from a fresh clone to a running Kubernetes lab and the RCAnnon web UI.
 
-## Prerequisites
+> **Using your own cluster?** Skip Step 1 and point RCAnnon at a read-only kubeconfig later with [Compose Operations](../infrastructure/compose/README.md).
 
-- **Reference Compose quick start:** Docker Engine or Docker Desktop with Docker Compose v2 (no local Python environment required).
-- **Separate management Kubernetes cluster:** Any Kubernetes cluster that can run the published `ghcr.io/jkuzel02/rcannon`, LibreChat (`v0.8.9`), and MongoDB (`8.0`) containers and reach target clusters.
+## 1. Spin Up a Local Kubernetes Cluster (Optional)
 
-## 60-Second Quick Start (Offline Mock Mode)
-
-Try the full authenticated UI + FastAPI + MongoDB stack on your workstation without a Kubernetes cluster or an external LLM API key:
-
-1. Clone the repository and generate local runtime secret files:
+Need a cluster to inspect right away? Provision the built-in disposable **Kind + Flux + Prometheus + Grafana** lab (one easy way to get started; requires `docker`, `kind`, `kubectl`, and `helm`—see [OS setup](../infrastructure/k8s/README.md)):
 
 ```sh
-git clone https://github.com/jkuzel02/RCAnnon.git
-cd RCAnnon
-./infrastructure/compose/scripts/init-dev-secrets.sh
+bash infrastructure/k8s/bootstrap.sh
 ```
 
-2. Validate the Compose stack, pull the prebuilt API image, start all services, and seed the initial local administrator account:
+## 2. Configure & Start RCAnnon
+
+Copy `.env.example` to `.env`, paste your `OPENAI_API_KEY` (or leave it empty to try offline mock mode), and start Docker Compose:
 
 ```sh
-docker compose config --quiet
-RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:latest docker compose up -d --no-build --wait
-docker compose --profile bootstrap run --rm ui-bootstrap
+cp .env.example .env
+docker compose up -d
 ```
 
-3. Confirm LibreChat is healthy on loopback (`127.0.0.1:3080`):
-
-```sh
-curl -fsS http://127.0.0.1:3080/health
-```
-
-4. Open **`http://127.0.0.1:3080`** in your browser:
-   - **Email:** `admin@rcannon.local`
-   - **Password:** the generated string inside `infrastructure/compose/secrets/librechat_admin_password.secret`
-   - Choose a model (`rcannon-base`, `rcannon-optimal`, or `rcannon-mas`) and submit an `/rca` prompt:
+Open **`http://127.0.0.1:3080`**:
+- **Email:** `admin@rcannon.local`
+- **Password:** `rcannon-local-admin` (or whatever you set in `.env`)
+- Pick a model (`rcannon-base`, `rcannon-optimal`, or `rcannon-mas`) and submit an `/rca` prompt:
 
 ```text
-/rca context=lab namespace=demo -- checkout is failing
+/rca context=lab namespace=demo -- foo-app is failing
 ```
 
-For multi-user account creation, password recovery, container security inspection, and volume backups, see [Compose Operations](../infrastructure/compose/README.md).
-
-## How RCAnnon Works
-
-RCAnnon keeps the diagnostic runtime strictly outside the target cluster's node, CNI, ingress, and monitoring failure domains:
-
-```mermaid
-flowchart LR
-    U["Browser (LibreChat UI)"] -->|"Email login + /v1/chat/completions"| A["FastAPI OpenAI Facade"]
-    A -->|"Scoped TargetSelector"| C["Read-Only Evidence Collector"]
-    C -->|"get / list (no Secrets, no exec)"| K["Target Kubernetes API"]
-    C -->|"Optional fixed queries"| P["Retained Telemetry"]
-    C -->|"Sanitized + SHA-256 hashed"| S["EvidenceSnapshot/v1"]
-    S -->|"base (1 call)"| W1["Baseline LangGraph"]
-    S -->|"optimal (1 JSON call)"| W2["Optimal LangGraph"]
-    S -->|"mas (3 specialists -> coordinator)"| W3["Parallel MAS LangGraph"]
-    W1 -->|"Shared Chat Completions adapter"| L["OpenAI-Compatible or Mock Provider"]
-    W2 -->|"Shared Chat Completions adapter"| L
-    L -->|"Validated RunResult/v1"| A
-    A -->|"Safe Markdown (SSE)"| U
-```
-
-- **Scoped, read-only collection:** Reads workloads, events, bounded pod logs, metrics, and read-only checks only within allowlisted cluster aliases and namespaces—never reads `Secret` values, runs `pod exec`, or mutates resources.
-- **Redaction and single-hash snapshots:** Credentials and bearer tokens are scrubbed before producing an immutable `EvidenceSnapshot/v1`.
-- **Honest degradation:** When cluster telemetry or metrics are missing or RBAC-denied, RCAnnon reports `qualified` (with explicit `limitations`) or `insufficient_evidence` instead of guessing.
-
-### Choosing a Model Alias
-
-| Model Alias | Strategy | Calls | Output Format | When to Use |
-| --- | --- | --- | --- | --- |
-| `rcannon-base` | Single-agent free-form | 1 | Free-text Markdown | Quick narrative diagnosis |
-| `rcannon-optimal` | Structured single-agent | 1 | 5-heading structured RCA | Fast, concise root-cause report |
-| `rcannon-mas` | 3 parallel specialists -> coordinator | 4 | 5-heading RCA + claim cross-checks | Multi-signal incidents (config, logs, metrics) |
-
-## Connect a Live LLM & Real Kubernetes Cluster
-
-To diagnose incidents in a real cluster using live OpenAI API (or any OpenAI-compatible endpoint) inference:
-
-1. Place your LLM API token in `infrastructure/compose/secrets/llm_api_key.secret` (no trailing quotes).
-2. Place a read-only kubeconfig (plus any relative CA/client certificates) in `infrastructure/compose/kubeconfig/config`. RCAnnon rejects `exec` plugins, `auth-provider` blocks, and `insecure-skip-tls-verify: true`.
-3. Launch with both Compose overlays (see [Compose Operations](../infrastructure/compose/README.md) for Linux/macOS Kind bridge networking details):
-
-```sh
-docker compose \
-  -f compose.yaml \
-  -f infrastructure/compose/compose.openai.yaml \
-  -f infrastructure/compose/compose.kube.yaml \
-  up -d --wait
-```
-
-## "So I Can't Run RCAnnon Inside a Kubernetes Cluster?"
-
-**You can.** Docker Compose is simply the quickest single-machine deployment path, not a platform restriction.
-
-- **Intentional design — outside the *target* cluster's failure domain:** Keep RCAnnon independent from whichever cluster you are investigating so node, CNI, CoreDNS, ingress, or monitoring failures in that cluster cannot knock out your diagnostic tool.
-- **Running in another Kubernetes cluster works cleanly:** Deploy the multi-arch container image ([Container Image](../docs/container-image.md)) alongside LibreChat and MongoDB in a **separate management or operations cluster**, mount target cluster kubeconfigs as read-only Secrets, and point LibreChat at the in-cluster `api` Service (`http://<api-service>:8000/v1`).
-- **Running in the *same* cluster:** Nothing prevents it in code, though it trades away blast-radius independence during cluster-wide outages.
-
-## User Documentation
-
-| Guide | What It Covers |
-| --- | --- |
-| [Compose Operations](../infrastructure/compose/README.md) | Service topology, LibreChat user/admin management, live overlays, Kind reachability, and backups |
-| [Compose Secret Files](../infrastructure/compose/secrets/README.md) | Secret files, formatting requirements, UID ownership (`1000` vs `10001`), and permissions |
-| [Container Image](../docs/container-image.md) | GHCR image tags (`latest`, `0.1.4`, `main`, `sha-*`), runtime variables, and SLSA provenance | <!-- x-release-please-version -->
-| [Architecture & `v1` Contracts](../docs/architecture.md) | Trust boundaries, redaction guarantees, and OpenAI/operator API surface |
+> `docker compose up -d` generates isolated per-service tokens and seeds the local UI account automatically—no extra setup scripts or manual bootstrap steps needed.
 
 ---
 
-*Want to build from source, run the test suite, or contribute? See **[CONTRIBUTING.md](../CONTRIBUTING.md)**.*
+## What You Just Spun Up
+
+### In Kubernetes (`kind-local`)
+
+If you ran `bootstrap.sh`, Flux CD reconciles the following into your local `kind-local` cluster:
+
+| Component | Purpose | Access / Check |
+| --- | --- | --- |
+| **Demo apps (`demo` namespace)** | Sample workloads (`foo-app`, `bar-app`) | `https://foo.localhost` / `https://bar.localhost` |
+| **Grafana & Prometheus (`monitoring`)** | Cluster metrics & dashboards (user: `admin`) | `https://grafana.localhost` |
+| **Flux CD (`flux-system`)** | GitOps reconciliation UI & controllers | `https://flux.localhost` |
+| **Traefik & cert-manager** | Local HTTPS Gateway for `*.localhost` | `kubectl --context kind-local get pods -A` |
+
+Delete the lab cluster anytime with `kind delete cluster --name local`.
+
+### In Docker (`docker compose`)
+
+`docker compose up -d` starts three long-running services plus two automatic one-shot setup containers:
+
+| Container | Role | Port / Exposure |
+| --- | --- | --- |
+| `ui` (LibreChat `v0.8.9`) | Local login & chat UI | `http://127.0.0.1:3080` (loopback only) |
+| `api` (RCAnnon FastAPI) | Read-only K8s collector, evidence hashing, 3 LangGraph workflows | Internal Docker network only |
+| `mongodb` (MongoDB `8.0`) | User accounts & chat history (`rcannon_mongo_data`) | Internal Docker network only |
+| `secrets-init` / `ui-bootstrap` | One-shot setup creating per-service tokens & admin login (exits `0`) | `network_mode: none` / internal DB only |
+
+Stop the stack anytime with `docker compose down` (add `-v` to wipe persisted volumes).
+
+---
+
+## Choosing a Workflow Model
+
+| Model Alias | Strategy | Calls | Output |
+| --- | --- | --- | --- |
+| `rcannon-base` | Single-agent free-form | 1 | Narrative Markdown |
+| `rcannon-optimal` | Structured single-agent | 1 | 5-heading RCA report |
+| `rcannon-mas` | 3 parallel specialists -> coordinator | 4 | 5-heading RCA + claim cross-checks |
+
+## Next Steps
+
+| Need | Where to Go |
+| --- | --- |
+| Connect `api` to your Kind or remote cluster (`compose.kube.yaml`) | [Compose Operations](../infrastructure/compose/README.md) |
+| Run with prebuilt GHCR images (`0.1.4`, `latest`) or inside a management K8s cluster | [Container Image](../docs/container-image.md) | <!-- x-release-please-version -->
+| Understand trust boundaries, redaction, and `EvidenceSnapshot/v1` contracts | [Architecture](../docs/architecture.md) |
+| Build from source, run offline tests, or contribute | [Contributing](../CONTRIBUTING.md) |

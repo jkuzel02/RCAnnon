@@ -1,12 +1,47 @@
 name: rcannon
 
 services:
+  secrets-init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${RCANNON_IMAGE:-rcannon-api:local}
+    container_name: rcannon-secrets-init
+    user: "0:0"
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: "no"
+    network_mode: none
+    entrypoint:
+      - python
+      - /app/scripts/init-compose-secrets.py
+    command: []
+    environment:
+      LIBRECHAT_ADMIN_PASSWORD: ${LIBRECHAT_ADMIN_PASSWORD:-}
+    volumes:
+      - ./infrastructure/compose/scripts/init-compose-secrets.py:/app/scripts/init-compose-secrets.py:ro
+      - ./infrastructure/compose/secrets:/seed-secrets:ro
+      - rcannon_api_secrets:/out/api
+      - rcannon_ui_secrets:/out/ui
+      - rcannon_bootstrap_secrets:/out/bootstrap
+
   api:
     build:
       context: .
       dockerfile: Dockerfile
     image: ${RCANNON_IMAGE:-rcannon-api:local}
     container_name: rcannon-api
+    depends_on:
+      secrets-init:
+        condition: service_completed_successfully
     user: "10001:10001"
     read_only: true
     cap_drop:
@@ -24,15 +59,16 @@ services:
       - telemetry_net
     volumes:
       - rcannon_api_data:/var/lib/rcannon
-    secrets:
-      - rcannon_ui_bearer_token
-      - rcannon_operator_bearer_token
+      - rcannon_api_secrets:/run/rcannon-secrets:ro
     environment:
-      RCANNON_PROVIDER_MODE: ${RCANNON_PROVIDER_MODE:-mock}
+      RCANNON_PROVIDER_MODE: ${RCANNON_PROVIDER_MODE:-auto}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       RCANNON_DB_PATH: /var/lib/rcannon/rcannon.db
       RCANNON_ALLOWED_SCOPES: ${RCANNON_ALLOWED_SCOPES:-{"lab":["demo"]}}
-      RCANNON_UI_BEARER_TOKEN_FILE: /run/secrets/rcannon_ui_bearer_token
-      RCANNON_OPERATOR_BEARER_TOKEN_FILE: /run/secrets/rcannon_operator_bearer_token
+      RCANNON_UI_BEARER_TOKEN_FILE: /run/rcannon-secrets/rcannon_ui_bearer_token
+      RCANNON_OPERATOR_BEARER_TOKEN_FILE: /run/rcannon-secrets/rcannon_operator_bearer_token
       RCANNON_SNAPSHOT_TTL_SECONDS: ${RCANNON_SNAPSHOT_TTL_SECONDS:-3600}
       RCANNON_MAX_SNAPSHOTS: ${RCANNON_MAX_SNAPSHOTS:-100}
       RCANNON_MAX_RUNS: ${RCANNON_MAX_RUNS:-500}
@@ -80,6 +116,46 @@ services:
       retries: 5
       start_period: 15s
 
+  ui-bootstrap:
+    image: registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b
+    container_name: rcannon-ui-bootstrap
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      secrets-init:
+        condition: service_completed_successfully
+    user: "1000:1000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: "no"
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid,nodev
+      - /app/logs:size=16m,uid=1000,gid=1000,nosuid,nodev
+    networks:
+      - ui_db
+    volumes:
+      - ./infrastructure/compose/scripts/bootstrap-librechat-admin.sh:/app/scripts/bootstrap-librechat-admin.sh:ro
+      - rcannon_bootstrap_secrets:/run/rcannon-secrets:ro
+    entrypoint:
+      - /bin/sh
+      - /app/scripts/bootstrap-librechat-admin.sh
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/LibreChat
+      LIBRECHAT_ADMIN_EMAIL: ${LIBRECHAT_ADMIN_EMAIL:-admin@rcannon.local}
+      LIBRECHAT_ADMIN_NAME: ${LIBRECHAT_ADMIN_NAME:-RCAnnon Admin}
+      LIBRECHAT_ADMIN_USERNAME: ${LIBRECHAT_ADMIN_USERNAME:-rcannon-admin}
+      LIBRECHAT_ADMIN_PASSWORD_FILE: /run/rcannon-secrets/librechat_admin_password
+      LIBRECHAT_JWT_SECRET_FILE: /run/rcannon-secrets/librechat_jwt_secret
+      LIBRECHAT_JWT_REFRESH_SECRET_FILE: /run/rcannon-secrets/librechat_jwt_refresh_secret
+      LIBRECHAT_CREDS_KEY_FILE: /run/rcannon-secrets/librechat_creds_key
+      LIBRECHAT_CREDS_IV_FILE: /run/rcannon-secrets/librechat_creds_iv
+      ALLOW_EMAIL_LOGIN: "true"
+      ALLOW_REGISTRATION: "false"
+
   ui:
     image: registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b
     container_name: rcannon-ui
@@ -88,6 +164,10 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      secrets-init:
+        condition: service_completed_successfully
+      ui-bootstrap:
+        condition: service_completed_successfully
     user: "1000:1000"
     read_only: true
     cap_drop:
@@ -119,12 +199,7 @@ services:
     volumes:
       - ./infrastructure/compose/librechat.yaml:/app/librechat.yaml:ro
       - ./infrastructure/compose/scripts/librechat-entrypoint.sh:/app/scripts/librechat-entrypoint.sh:ro
-    secrets:
-      - rcannon_ui_bearer_token
-      - librechat_jwt_secret
-      - librechat_jwt_refresh_secret
-      - librechat_creds_key
-      - librechat_creds_iv
+      - rcannon_ui_secrets:/run/rcannon-secrets:ro
     environment:
       HOST: 0.0.0.0
       PORT: "3080"
@@ -133,6 +208,11 @@ services:
       ENDPOINTS: custom
       DOMAIN_CLIENT: http://127.0.0.1:${RCANNON_UI_PORT:-3080}
       DOMAIN_SERVER: http://127.0.0.1:${RCANNON_UI_PORT:-3080}
+      RCANNON_UI_BEARER_TOKEN_FILE: /run/rcannon-secrets/rcannon_ui_bearer_token
+      LIBRECHAT_JWT_SECRET_FILE: /run/rcannon-secrets/librechat_jwt_secret
+      LIBRECHAT_JWT_REFRESH_SECRET_FILE: /run/rcannon-secrets/librechat_jwt_refresh_secret
+      LIBRECHAT_CREDS_KEY_FILE: /run/rcannon-secrets/librechat_creds_key
+      LIBRECHAT_CREDS_IV_FILE: /run/rcannon-secrets/librechat_creds_iv
       ALLOW_EMAIL_LOGIN: "true"
       ALLOW_REGISTRATION: "false"
       ALLOW_SOCIAL_LOGIN: "false"
@@ -155,46 +235,6 @@ services:
       retries: 5
       start_period: 30s
 
-  ui-bootstrap:
-    profiles:
-      - bootstrap
-    image: registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b
-    container_name: rcannon-ui-bootstrap
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    user: "1000:1000"
-    read_only: true
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    init: true
-    restart: "no"
-    tmpfs:
-      - /tmp:size=32m,noexec,nosuid,nodev
-      - /app/logs:size=16m,uid=1000,gid=1000,nosuid,nodev
-    networks:
-      - ui_db
-    volumes:
-      - ./infrastructure/compose/scripts/bootstrap-librechat-admin.sh:/app/scripts/bootstrap-librechat-admin.sh:ro
-    entrypoint:
-      - /bin/sh
-      - /app/scripts/bootstrap-librechat-admin.sh
-    secrets:
-      - librechat_admin_password
-      - librechat_jwt_secret
-      - librechat_jwt_refresh_secret
-      - librechat_creds_key
-      - librechat_creds_iv
-    environment:
-      MONGO_URI: mongodb://mongodb:27017/LibreChat
-      LIBRECHAT_ADMIN_EMAIL: ${LIBRECHAT_ADMIN_EMAIL:-admin@rcannon.local}
-      LIBRECHAT_ADMIN_NAME: ${LIBRECHAT_ADMIN_NAME:-RCAnnon Admin}
-      LIBRECHAT_ADMIN_USERNAME: ${LIBRECHAT_ADMIN_USERNAME:-rcannon-admin}
-      ALLOW_EMAIL_LOGIN: "true"
-      ALLOW_REGISTRATION: "false"
-
 networks:
   ui_edge:
     driver: bridge
@@ -213,19 +253,6 @@ networks:
 volumes:
   rcannon_api_data:
   rcannon_mongo_data:
-
-secrets:
-  rcannon_ui_bearer_token:
-    file: ${RCANNON_UI_BEARER_TOKEN_SECRET_FILE:-./infrastructure/compose/secrets/ui_bearer_token.secret}
-  rcannon_operator_bearer_token:
-    file: ${RCANNON_OPERATOR_BEARER_TOKEN_SECRET_FILE:-./infrastructure/compose/secrets/operator_bearer_token.secret}
-  librechat_jwt_secret:
-    file: ${LIBRECHAT_JWT_SECRET_FILE:-./infrastructure/compose/secrets/librechat_jwt_secret.secret}
-  librechat_jwt_refresh_secret:
-    file: ${LIBRECHAT_JWT_REFRESH_SECRET_FILE:-./infrastructure/compose/secrets/librechat_jwt_refresh_secret.secret}
-  librechat_creds_key:
-    file: ${LIBRECHAT_CREDS_KEY_SECRET_FILE:-./infrastructure/compose/secrets/librechat_creds_key.secret}
-  librechat_creds_iv:
-    file: ${LIBRECHAT_CREDS_IV_SECRET_FILE:-./infrastructure/compose/secrets/librechat_creds_iv.secret}
-  librechat_admin_password:
-    file: ${LIBRECHAT_ADMIN_PASSWORD_SECRET_FILE:-./infrastructure/compose/secrets/librechat_admin_password.secret}
+  rcannon_api_secrets:
+  rcannon_ui_secrets:
+  rcannon_bootstrap_secrets:

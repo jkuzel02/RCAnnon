@@ -131,10 +131,8 @@ All `120+` offline unit, contract, evidence, API, Compose, and LibreChat tests r
 To build and verify the Compose stack from local source:
 
 ```sh
-./infrastructure/compose/scripts/init-dev-secrets.sh
 docker compose config --quiet
 docker compose up -d --build --wait
-docker compose --profile bootstrap run --rm ui-bootstrap
 ```
 
 Before pushing Markdown edits, verify English-only docs compliance:
