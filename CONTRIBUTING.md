@@ -48,7 +48,7 @@ Working in this repo requires the `gh` tool installed. Check the presence of the
 
 - **Tag-to-package version alignment (MUST match):** Release versions use SemVer Git tags (`X.Y.Z`, starting at `0.1.0`). The release tag, `[project].version` in `pyproject.toml`, and `"."` in `.release-please-manifest.json` **MUST match**. Both the unit test suite and the GHCR release workflow fail closed on any version mismatch.
 - **Automated `CHANGELOG.md`:** `CHANGELOG.md` and version bumps are automated via Release Please (`.github/workflows/release-please.yml` and `release-please-config.json`) from [Conventional Commits](https://www.conventionalcommits.org/). Do not manually edit `CHANGELOG.md` in regular PRs; write accurate English Conventional Commit titles because they generate release notes.
-- **Release triggers:** Documentation-only (`README.md`, `docs/**`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `**/README.md`), test-only (`tests/**`), and CI-only changes do not trigger new releases. Releases trigger only when the runtime codebase (`rca/`), Python/container packaging (`pyproject.toml`, `Dockerfile`, `compose.yaml`, runtime `infrastructure/` assets), locked system prompts (`prompts/`), incident scenarios (`scenarios/`), or evaluation code (`evaluation/`) change.
+- **Release triggers:** Documentation-only (`README.md`, `docs/**`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `**/README.md`), test-only (`tests/**`), and CI-only changes do not trigger new releases. Releases trigger only when the runtime codebase (`rca/`), Python/container packaging (`pyproject.toml`, `Dockerfile`, `compose.yaml`, runtime `infrastructure/` assets), locked system prompts (`prompts/`), or incident scenarios (`scenarios/`) change.
 - **Release approvals and GHCR publishing:** Release PRs opened by Release Please require human review and human merge just like any other PR (AI agents must never approve, merge, or push release tags). Merging a Release PR creates the matching tag, GitHub Release, and multi-arch container image (`ghcr.io/jkuzel02/rcannon:<version>`, documented in `docs/container-image.md`).
 
 ## Pull Request Approvals
@@ -180,10 +180,9 @@ RCAnnon/
 │   └── workflows/   # base, optimal, parallel mas workflows & MAS evidence validation
 ├── prompts/         # Locked versioned system prompts (base.md, optimal.md, mas/*.md)
 ├── scenarios/       # 16 reproducible Kubernetes incident specs (01..16) with app/ + rca.json
-├── evaluation/      # Prompt smoke checks and live evaluation utilities
 ├── infrastructure/  # Docker Compose + LibreChat packaging & Kind/Flux lab
 ├── docs/            # Architecture, container image, scenarios, testing, and user guides
-└── tests/           # Offline pytest suites
+└── tests/           # Offline pytest suites and live prompt checks
 ```
 
 | Document | Purpose |
@@ -192,7 +191,7 @@ RCAnnon/
 | [docs/testing.md](./docs/testing.md) | Focused `pytest` commands, workflow contract, and MAS claim-validation guarantees |
 | [docs/scenarios.md](./docs/scenarios.md) | Sixteen Kubernetes incident scenario specs and evaluator format |
 | [infrastructure/k8s/README.md](./infrastructure/k8s/README.md) | Kind + Flux CD target lab bootstrap, Grafana/Flux access, and cleanup |
-| [evaluation/prompt_checks/README.md](./evaluation/prompt_checks/README.md) | Local live LLM prompt smoke checks against an OpenAI-compatible API |
+| [tests/prompt_checks/README.md](./tests/prompt_checks/README.md) | Local live LLM prompt smoke checks against an OpenAI-compatible API |
 | [SECURITY.md](./SECURITY.md) | Isolation model, container posture verification, and vulnerability reporting |
 | [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Community standards and reporting guidelines |
 | [CHANGELOG.md](./CHANGELOG.md) | Automated Conventional Commits release history |

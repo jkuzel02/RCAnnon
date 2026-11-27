@@ -27,11 +27,30 @@ Empty arrays mean data was not collected, not that zero logs or checks occurred.
 
 ## Constraints
 - Base all observations strictly on the provided `logs` and `checks`. Do not extrapolate fictitious log entries.
-- If `logs` or `checks` are empty, report them explicitly as unobserved. Do not assume healthy runtime execution from the absence of logged errors.
+- When `logs` is empty, return exactly `"log_findings": []`. When `checks` is empty, return exactly `"connectivity_findings": []`. Apply each rule independently.
+- Describe missing sources only in `preliminary_assessment` or `runtime_failure_mode`. Findings arrays contain actual observations. With both sources empty, set `runtime_failure_mode` to `"unknown"`.
 - Clearly separate direct observations (e.g., "log contains HTTP 502") from root-cause deductions (e.g., "backend service is unavailable").
 - Output exactly one valid JSON object conforming to the schema below without surrounding prose, markdown code fences, or explanations.
 
 ## Few-shot Examples
+
+### Empty logs and checks
+
+**Input:**
+```json
+{"logs": [], "checks": []}
+```
+
+**Output:**
+```json
+{
+  "agent": "logs-connectivity",
+  "log_findings": [],
+  "connectivity_findings": [],
+  "runtime_failure_mode": "unknown",
+  "preliminary_assessment": "Container logs and connectivity checks were not collected."
+}
+```
 
 ### Example 1: Downstream Service DNS Lookup Failure
 **Input:**

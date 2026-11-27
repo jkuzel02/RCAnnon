@@ -1,13 +1,19 @@
 """Offline checks of the live prompt runner and its case fixtures."""
 
 import json
+import re
 from io import BytesIO, StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
+from urllib.error import URLError
 
-from evaluation.prompt_checks.run import (
+from jsonschema import Draft202012Validator
+
+from rca.contracts.schemas import REPORT_SCHEMAS, validate_observations
+from tests.prompt_checks.run import (
+    DEFAULT_TIMEOUT_SECONDS,
     ENDPOINT,
     SPECIALISTS,
     complete,
@@ -136,7 +142,7 @@ class PromptRunnerTest(TestCase):
             "logs-connectivity": {
                 **REPORTS["logs-connectivity"],
                 "log_findings": [
-                    {"source": "web", "level": "error", "summary": "Out of memory."}
+                    {"source": "logs", "level": "info", "summary": "No container logs were provided."}
                 ],
             },
             "metrics-telemetry": {**REPORTS["metrics-telemetry"], "throttling_detected": True},
@@ -155,7 +161,25 @@ class PromptRunnerTest(TestCase):
         self.assertIn("no metrics in the input", results[4]["error"])
         self.assertEqual(results[-1]["status"], "blocked")
 
-    @patch("evaluation.prompt_checks.run.urlopen")
+    def test_logs_and_metrics_examples_match_the_runtime_contract(self):
+        pattern = re.compile(
+            r"^\*\*(?:Input|Output):\*\*\n(?:\n)*(?:```json\n(.*?)\n```|((?: {4}[^\n]*\n)+))",
+            re.DOTALL | re.MULTILINE,
+        )
+        for specialist, source in (("logs-connectivity", "logs"), ("metrics-telemetry", "metrics")):
+            blocks = [fenced or indented for fenced, indented in pattern.findall(self.prompts[f"mas/{specialist}.md"])]
+            examples = list(zip(blocks[::2], blocks[1::2], strict=True))
+            self.assertTrue(examples)
+            self.assertTrue(any(json.loads(payload)[source] == [] for payload, _ in examples))
+            validator = Draft202012Validator(REPORT_SCHEMAS[specialist])
+            for input_text, output_text in examples:
+                with self.subTest(specialist=specialist, payload=input_text):
+                    payload = json.loads(input_text)
+                    report = json.loads(output_text)
+                    validator.validate(report)
+                    validate_observations(report, payload)
+
+    @patch("tests.prompt_checks.run.urlopen")
     def test_chat_completion_request_and_usage(self, urlopen):
         response = {
             "choices": [{"message": {"content": "RCA result"}, "finish_reason": "stop"}],
@@ -175,14 +199,28 @@ class PromptRunnerTest(TestCase):
         self.assertEqual(body["model"], "test-model")
         self.assertEqual(body["messages"][0], {"role": "system", "content": "Prompt"})
         self.assertEqual(json.loads(body["messages"][1]["content"]), {"context": {}})
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], DEFAULT_TIMEOUT_SECONDS)
+
+    @patch("tests.prompt_checks.run.urlopen")
+    def test_chat_completion_distinguishes_safe_timeout_and_connection_errors(self, urlopen):
+        for error, expected in (
+            (TimeoutError("sensitive provider detail"), "timed out after 2.5 seconds"),
+            (URLError(TimeoutError("sensitive provider detail")), "timed out after 2.5 seconds"),
+            (URLError("sensitive provider detail"), "connection failed"),
+        ):
+            with self.subTest(error=type(error)), self.assertRaisesRegex(ValueError, expected) as raised:
+                urlopen.side_effect = error
+                complete("test-model", "fake-key", "Prompt", {}, timeout=2.5)
+            self.assertNotIn("sensitive provider detail", str(raised.exception))
+            self.assertEqual(urlopen.call_args.kwargs["timeout"], 2.5)
 
     def test_main_cli_only_writes_no_file_by_default(self):
         case = self.cases["01"]
         expected = case["root-cause"]
         calls = []
 
-        def fake_complete(model, api_key, prompt, payload, *, endpoint=ENDPOINT):
-            calls.append((model, api_key, endpoint))
+        def fake_complete(model, api_key, prompt, payload, *, endpoint, timeout):
+            calls.append((model, api_key, endpoint, timeout))
             if prompt == self.prompts["base.md"]:
                 return expected["cause"], None
             for specialist, report in REPORTS.items():
@@ -193,7 +231,7 @@ class PromptRunnerTest(TestCase):
         with (
             TemporaryDirectory() as tmpdir,
             patch.dict("os.environ", {"OPENAI_API_KEY": "fake-openai-key"}, clear=True),
-            patch("evaluation.prompt_checks.run.complete", side_effect=fake_complete),
+            patch("tests.prompt_checks.run.complete", side_effect=fake_complete),
             patch("sys.stdout", new_callable=StringIO) as stdout,
         ):
             status = main(["--case", "01"])
@@ -202,7 +240,7 @@ class PromptRunnerTest(TestCase):
             self.assertEqual(list(Path(tmpdir).iterdir()), [])
             self.assertTrue(
                 all(
-                    call == ("gpt-4o-mini", "fake-openai-key", "https://api.openai.com/v1/chat/completions")
+                    call == ("gpt-4o-mini", "fake-openai-key", ENDPOINT, DEFAULT_TIMEOUT_SECONDS)
                     for call in calls
                 )
             )
@@ -212,13 +250,13 @@ class PromptRunnerTest(TestCase):
             self.assertEqual(status_with_out, 0)
             self.assertTrue(output_file.is_file())
 
-    def test_main_supports_custom_openai_endpoint_and_model(self):
+    def test_main_supports_custom_openai_endpoint_model_and_timeout(self):
         case = self.cases["01"]
         expected = case["root-cause"]
         calls = []
 
-        def fake_complete(model, api_key, prompt, payload, *, endpoint=ENDPOINT):
-            calls.append((model, api_key, endpoint))
+        def fake_complete(model, api_key, prompt, payload, *, endpoint, timeout):
+            calls.append((model, api_key, endpoint, timeout))
             if prompt == self.prompts["base.md"]:
                 return expected["cause"], None
             for specialist, report in REPORTS.items():
@@ -233,17 +271,18 @@ class PromptRunnerTest(TestCase):
                     "OPENAI_API_KEY": "fake-custom-key",
                     "OPENAI_BASE_URL": "http://127.0.0.1:11434/v1/",
                     "OPENAI_MODEL": "llama3.1:8b",
+                    "OPENAI_TIMEOUT_SECONDS": "150",
                 },
                 clear=True,
             ),
-            patch("evaluation.prompt_checks.run.complete", side_effect=fake_complete),
+            patch("tests.prompt_checks.run.complete", side_effect=fake_complete),
             patch("sys.stdout", new_callable=StringIO),
         ):
             self.assertEqual(main(["--case", "01"]), 0)
 
         self.assertTrue(
             all(
-                call == ("llama3.1:8b", "fake-custom-key", "http://127.0.0.1:11434/v1/chat/completions")
+                call == ("llama3.1:8b", "fake-custom-key", "http://127.0.0.1:11434/v1/chat/completions", 150.0)
                 for call in calls
             )
         )

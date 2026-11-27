@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -24,7 +25,7 @@ try:
 except ModuleNotFoundError:
     if __package__ in {None, ""}:
         sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-        from evaluation.prompt_checks.schemas import CASE, RCA, REPORT_SCHEMAS
+        from tests.prompt_checks.schemas import CASE, RCA, REPORT_SCHEMAS
     else:
         from .schemas import CASE, RCA, REPORT_SCHEMAS
     OBSERVATION_FIELDS = {
@@ -53,6 +54,7 @@ PROJECT = Path(__file__).resolve().parents[2]
 DEFAULT_BASE_URL = "https://api.openai.com/v1"
 ENDPOINT = f"{DEFAULT_BASE_URL}/chat/completions"
 DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_TIMEOUT_SECONDS = 120.0
 SPECIALISTS = {
     "k8s-config-events": ("resources", "events"),
     "logs-connectivity": ("logs", "checks"),
@@ -99,7 +101,7 @@ def load_inputs():
     return prompts, cases, expectations
 
 
-def complete(model, api_key, prompt, payload, *, endpoint=ENDPOINT):
+def complete(model, api_key, prompt, payload, *, endpoint=ENDPOINT, timeout=DEFAULT_TIMEOUT_SECONDS):
     request = Request(
         endpoint,
         data=json.dumps(
@@ -117,14 +119,18 @@ def complete(model, api_key, prompt, payload, *, endpoint=ENDPOINT):
     )
     request.add_unredirected_header("Authorization", f"Bearer {api_key}")
     try:
-        with urlopen(request, timeout=60) as response:
+        with urlopen(request, timeout=timeout) as response:
             body = json.load(response)
     except HTTPError as error:
         if error.code in {401, 403, 404, 429}:
             raise SystemExit(f"OpenAI API returned HTTP {error.code}; stopping the run.") from None
         raise ValueError(f"OpenAI API returned HTTP {error.code}.") from None
-    except (URLError, TimeoutError):
-        raise ValueError("The OpenAI API request failed or timed out.") from None
+    except TimeoutError:
+        raise ValueError(f"The OpenAI API request timed out after {timeout:g} seconds.") from None
+    except URLError as error:
+        if isinstance(error.reason, TimeoutError):
+            raise ValueError(f"The OpenAI API request timed out after {timeout:g} seconds.") from None
+        raise ValueError("The OpenAI API connection failed.") from None
 
     try:
         choice = body["choices"][0]
@@ -256,6 +262,13 @@ def main(argv=None):
     base_url = os.environ.get("OPENAI_BASE_URL", "").strip() or DEFAULT_BASE_URL
     endpoint = _resolve_endpoint(base_url)
     model = os.environ.get("OPENAI_MODEL", "").strip() or DEFAULT_MODEL
+    raw_timeout = os.environ.get("OPENAI_TIMEOUT_SECONDS", "").strip()
+    try:
+        timeout = float(raw_timeout) if raw_timeout else DEFAULT_TIMEOUT_SECONDS
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError
+    except ValueError:
+        parser.error("OPENAI_TIMEOUT_SECONDS must be a finite positive number.")
 
     prompts, cases, expectations = load_inputs()
     selected = list(dict.fromkeys(args.case or cases))
@@ -263,7 +276,7 @@ def main(argv=None):
         parser.error(f"Unknown case IDs: {', '.join(unknown)}")
 
     def send(prompt, payload):
-        return complete(model, api_key, prompts[prompt], payload, endpoint=endpoint)
+        return complete(model, api_key, prompts[prompt], payload, endpoint=endpoint, timeout=timeout)
 
     results = []
     try:
