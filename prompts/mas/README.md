@@ -8,22 +8,11 @@ The multi-agent system investigates incidents reproduced from the benchmark scen
 
 ## 1. Multi-Agent Architecture
 
-The architecture partitions the diagnostic workflow into domain-specific investigation tasks overseen by an incident coordinator:
+Three specialists analyze the incident in parallel. The coordinator uses their reports and the incident context to produce the final root cause analysis.
 
-```mermaid
-flowchart TD
-    Context["Incident Input (context in rca.json)<br/>resources, events, logs, metrics, checks"] --> Coordinator["Coordinator Agent<br/>(coordinator.md)"]
-    
-    Coordinator -->|"Dispatches resources & events"| AgentK8s["Specialist 1: K8s Config & Events<br/>(k8s-config-events.md)"]
-    Coordinator -->|"Dispatches logs & checks"| AgentLogs["Specialist 2: Logs & Connectivity<br/>(logs-connectivity.md)"]
-    Coordinator -->|"Dispatches metrics & time_window"| AgentMetrics["Specialist 3: Metrics & Telemetry<br/>(metrics-telemetry.md)"]
-    
-    AgentK8s -->|"Domain report (JSON)"| Coordinator
-    AgentLogs -->|"Domain report (JSON)"| Coordinator
-    AgentMetrics -->|"Domain report (JSON)"| Coordinator
-    
-    Coordinator -->|"Cross-verification & synthesis"| Result["Final RCA Output (root-cause)<br/>cause, causal_chain, supporting_evidence,<br/>remediation, recovery_check"]
-```
+![Three parallel specialists analyze one incident snapshot. The coordinator combines their reports and returns a validated RCA.](../../docs/diagrams/mas-workflow.svg)
+
+[Editable Draw.io source](../../docs/diagrams/mas-workflow.drawio)
 
 ---
 
