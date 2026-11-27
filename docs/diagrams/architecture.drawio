@@ -182,7 +182,7 @@
         <mxCell id="edge-label-8" value="Usable evidence" style="text;html=0;align=center;verticalAlign=middle;spacing=0;fontFamily=Arial;fontSize=11;fontColor=#435972;pointerEvents=0;" vertex="1" parent="1">
           <mxGeometry x="508" y="266" width="124" height="18" as="geometry" />
         </mxCell>
-        <mxCell id="edge-label-9" value="Chat Completions in live mode" style="text;html=0;align=center;verticalAlign=middle;spacing=0;fontFamily=Arial;fontSize=11;fontColor=#435972;pointerEvents=0;" vertex="1" parent="1">
+        <mxCell id="edge-label-9" value="Chat Completions" style="text;html=0;align=center;verticalAlign=middle;spacing=0;fontFamily=Arial;fontSize=11;fontColor=#435972;pointerEvents=0;" vertex="1" parent="1">
           <mxGeometry x="678" y="308" width="124" height="18" as="geometry" />
         </mxCell>
         <mxCell id="edge-label-12" value="No usable evidence" style="text;html=0;align=center;verticalAlign=middle;spacing=0;fontFamily=Arial;fontSize=11;fontColor=#435972;pointerEvents=0;" vertex="1" parent="1">
