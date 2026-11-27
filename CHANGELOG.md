@@ -4,6 +4,22 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.2.1](https://github.com/jkuzel02/RCAnnon/compare/0.2.0...0.2.1) (2026-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove LibreChat and MongoDB for API-first deployment
+
+### Features
+
+* remove LibreChat and MongoDB for API-first deployment ([2ead200](https://github.com/jkuzel02/RCAnnon/commit/2ead200aa68b7724605e838c706eee8252417787)), closes [#85](https://github.com/jkuzel02/RCAnnon/issues/85)
+
+
+### Miscellaneous Chores
+
+* set next release version to 0.2.1 ([a49fce2](https://github.com/jkuzel02/RCAnnon/commit/a49fce22ea75830026f5b99356f0bf2bfaf00db1)), closes [#88](https://github.com/jkuzel02/RCAnnon/issues/88)
+
 ## [0.2.0](https://github.com/jkuzel02/RCAnnon/compare/0.1.8...0.2.0) (2026-11-27)
 
 
