@@ -4,6 +4,15 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.7](https://github.com/jkuzel02/RCAnnon/compare/0.1.6...0.1.7) (2026-11-27)
+
+
+### Bug Fixes
+
+* automate prompt checks under the test suite ([4b9894e](https://github.com/jkuzel02/RCAnnon/commit/4b9894e00b019de5ed6808efbd9cd76a58887e7c))
+* automate prompt checks under the test suite ([610dfa0](https://github.com/jkuzel02/RCAnnon/commit/610dfa08e1a3b65d747a1a49b25cca6ae3c40780)), closes [#77](https://github.com/jkuzel02/RCAnnon/issues/77)
+* show raw JSON in metrics prompt examples ([a6b4713](https://github.com/jkuzel02/RCAnnon/commit/a6b47134ab8ab647fb9b86f3f0444de746dc14fb)), closes [#77](https://github.com/jkuzel02/RCAnnon/issues/77)
+
 ## [0.1.6](https://github.com/jkuzel02/RCAnnon/compare/0.1.5...0.1.6) (2026-11-26)
 
 
