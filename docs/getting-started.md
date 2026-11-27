@@ -10,7 +10,7 @@ From a fresh clone with Docker running, start the published image in mock mode.
 ```sh
 git clone https://github.com/jkuzel02/RCAnnon.git
 cd RCAnnon
-export RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:0.1.6
+export RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:0.1.7
 export RCANNON_PROVIDER_MODE=mock
 docker compose -f compose.yaml up -d --no-build --wait
 ```
