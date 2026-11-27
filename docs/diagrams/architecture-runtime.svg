@@ -113,5 +113,6 @@
     <polyline points="767,678 797,678 797,657 833,657" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)" />
     <polyline points="406,450 229,450 229,128 406,128" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
     <polyline points="406,426 275,426 275,256" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="406,140 310,140 310,187" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-start="url(#arrow)" marker-end="url(#arrow)" />
   </g>
 </svg>
