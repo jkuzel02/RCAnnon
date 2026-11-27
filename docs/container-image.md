@@ -1,18 +1,12 @@
 # RCAnnon Container Image
 
-## Run the API with your own LibreChat
+## Run the API Container
 
-The RCAnnon image contains the API, collector, and workflows. If you already
-run LibreChat, start the image on the same Docker network. RCAnnon uses its own
-SQLite database. Keep your existing LibreChat and MongoDB services.
-
-Set `LIBRECHAT_NETWORK` to the Docker network used by your LibreChat server,
-and set two distinct bearer tokens in your shell before running this command.
-Use the UI token in LibreChat and keep the operator token for managing snapshots
-and runs.
+The RCAnnon image contains the FastAPI facade, Kubernetes evidence collector, and LangGraph workflows. Set two distinct bearer tokens in your shell (`RCANNON_UI_BEARER_TOKEN` for `/v1/*` chat clients and `RCANNON_OPERATOR_BEARER_TOKEN` for `/api/v1/*` operator routes) and start the container:
 
 ```sh
-docker run -d --name rcannon --network "$LIBRECHAT_NETWORK" \
+docker run -d --name rcannon \
+  -p 127.0.0.1:8000:8000 \
   --mount type=volume,source=rcannon-api-data,target=/var/lib/rcannon \
   -e RCANNON_DB_PATH=/var/lib/rcannon/rcannon.db \
   -e RCANNON_UI_BEARER_TOKEN -e RCANNON_OPERATOR_BEARER_TOKEN \
@@ -20,16 +14,12 @@ docker run -d --name rcannon --network "$LIBRECHAT_NETWORK" \
   ghcr.io/jkuzel02/rcannon:latest
 ```
 
-Copy the RCAnnon custom endpoint from [the working LibreChat configuration](../infrastructure/compose/librechat.yaml)
-into your `librechat.yaml`, including its `dropParams` list. Set `baseURL` to
-`http://rcannon:8000/v1`, allow `rcannon:8000` in `endpoints.allowedAddresses`,
-and set `RCANNON_UI_BEARER_TOKEN` to the same UI token in the LibreChat server's
-environment. Restart LibreChat to load the endpoint.
+Query `/v1/chat/completions` with `curl` or point any OpenAI-compatible client at `http://127.0.0.1:8000/v1` using `$RCANNON_UI_BEARER_TOKEN`.
 
 This starts the service in mock mode. To analyze your own cluster, supply the
 provider key and read-only kubeconfig listed under
 [Environment and secret configuration](#environment-and-secret-configuration).
-To try a report with a bundled incident first, use the [browser demo](getting-started.md).
+To try a report with a bundled incident first, use the [getting-started demo](getting-started.md).
 
 Prebuilt multi-architecture OCI container images for RCAnnon are published to GitHub Container Registry (GHCR):
 
@@ -54,7 +44,7 @@ For production or benchmark reproducibility, pin deployments by immutable manife
 ## Runtime Posture
 
 - **Unprivileged execution:** Runs as non-root user `rcannon` (`UID=10001`, `GID=10001`).
-- **Read-only filesystem compatible:** Application code and `.venv` are owned by `root:root` and read-only; writable runtime state uses `/var/lib/rcannon` (API SQLite store) and `/tmp` (UI auth/history state in Compose lives in LibreChat + MongoDB).
+- **Read-only filesystem compatible:** Application code and `.venv` are owned by `root:root` and read-only; writable runtime state uses `/var/lib/rcannon` (API SQLite store) and `/tmp`.
 - **Entrypoint and port:** Starts `uvicorn --factory rca.api.server:create_app_from_env` listening on port `8000` with `SIGTERM` graceful shutdown.
 - **Health probes:** Built-in `HEALTHCHECK` queries `http://127.0.0.1:8000/healthz`. Both `/healthz` and `/readyz` stay independent of target cluster and model provider outages.
 - **Config verification:** Run `python -m rca.api.server --check-config` inside the container to verify UID/GID, provider mode, and optional mounted kubeconfig security without starting the HTTP server.
@@ -81,7 +71,7 @@ Prefer Docker secret files (`*_FILE`) mounted under `/run/secrets/` rather than 
 
 ### With Docker Compose
 
-Follow [Getting Started](getting-started.md#try-the-web-app) to run the published image with the browser UI. For live inference and target cluster configuration, see [Compose operations](../infrastructure/compose/README.md).
+Follow [Getting Started](getting-started.md) to run the published image in demo mode, or [Deploy with Docker Compose](deploy-compose.md) for live inference and target cluster configuration. See [Compose operations](../infrastructure/compose/README.md) for advanced overrides.
 
 ### Hardened Standalone Container (`mock` mode)
 
@@ -107,7 +97,7 @@ You are not limited to Docker Compose. The published `ghcr.io/jkuzel02/rcannon` 
 
 - Run the API pod with non-root security settings (`runAsUser: 10001`, `runAsGroup: 10001`, `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`, `capabilities: { drop: ["ALL"] }`) and a persistent volume mounted at `/var/lib/rcannon`.
 - Provide `RCANNON_UI_BEARER_TOKEN_FILE`, `RCANNON_OPERATOR_BEARER_TOKEN_FILE`, `OPENAI_API_KEY_FILE`, and read-only target cluster kubeconfigs (`RCANNON_KUBECONFIG_PATH`) via mounted Kubernetes `Secret` volumes (`readOnly: true`).
-- Deploy LibreChat (`v0.8.9`) and MongoDB (`8.0`) on cluster-internal Services in that management cluster, pointing `librechat.yaml` at the internal RCAnnon Service URL (`http://<rcannon-api-service>:8000/v1`) and disabling self-registration.
+- Expose the API only on loopback or behind an independently managed TLS reverse proxy / Kubernetes `Ingress` or `NetworkPolicy`, and connect any external OpenAI-compatible client to `http://<rcannon-api-service>:8000/v1`.
 
 ## Supply-Chain Provenance Verification
 

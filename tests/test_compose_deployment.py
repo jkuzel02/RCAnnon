@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import httpx
@@ -366,15 +369,12 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
 
     root_env_example = (REPO_ROOT / ".env.example").read_text(encoding="utf-8")
     assert "OPENAI_API_KEY=" in root_env_example
-    assert "LIBRECHAT_ADMIN_EMAIL=" in root_env_example
-    assert "LIBRECHAT_ADMIN_PASSWORD=" in root_env_example
+    assert "RCANNON_PORT=" in root_env_example
+    assert "LIBRECHAT" not in root_env_example.upper()
 
     secrets_init_svc = base["services"]["secrets-init"]
-    librechat_secrets_svc = base["services"]["librechat-secrets"]
     api_svc = base["services"]["rcannon"]
-    ui_svc = base["services"]["librechat"]
-    mongo_svc = base["services"]["mongodb"]
-    bootstrap_svc = base["services"]["librechat-bootstrap"]
+    assert set(base["services"].keys()) == {"secrets-init", "rcannon"}
 
     assert secrets_init_svc["network_mode"] == "none"
     assert secrets_init_svc["read_only"] is True
@@ -382,16 +382,8 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     assert "ALL" in secrets_init_svc["cap_drop"]
     assert "no-new-privileges:true" in secrets_init_svc["security_opt"]
     assert "rcannon_api_secrets:/out/api" in secrets_init_svc["volumes"]
-    assert secrets_init_svc["command"] == ["api"]
+    assert secrets_init_svc["command"] == []
     assert "environment" not in secrets_init_svc
-    assert "rcannon_ui_secrets:/out/ui" not in secrets_init_svc["volumes"]
-    assert "rcannon_bootstrap_secrets:/out/bootstrap" not in secrets_init_svc["volumes"]
-    assert librechat_secrets_svc["profiles"] == ["librechat"]
-    assert librechat_secrets_svc["command"] == ["librechat"]
-    assert librechat_secrets_svc["network_mode"] == "none"
-    assert "rcannon_api_secrets:/out/api:ro" in librechat_secrets_svc["volumes"]
-    assert "rcannon_ui_secrets:/out/ui" in librechat_secrets_svc["volumes"]
-    assert "rcannon_bootstrap_secrets:/out/bootstrap" in librechat_secrets_svc["volumes"]
 
     assert api_svc["user"] == "10001:10001"
     assert api_svc["read_only"] is True
@@ -399,11 +391,9 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     assert set(api_svc["depends_on"]) == {"secrets-init"}
     assert "ALL" in api_svc["cap_drop"]
     assert "no-new-privileges:true" in api_svc["security_opt"]
-    assert "ports" not in api_svc
-    assert set(api_svc["networks"]) == {"ui_api", "api_egress", "telemetry_net"}
+    assert api_svc["ports"] == ["127.0.0.1:${RCANNON_PORT:-8000}:8000"]
+    assert set(api_svc["networks"]) == {"api_egress", "telemetry_net"}
     assert "rcannon_api_secrets:/run/rcannon-secrets:ro" in api_svc["volumes"]
-    assert "rcannon_ui_secrets:/run/rcannon-secrets:ro" not in api_svc["volumes"]
-    assert "rcannon_bootstrap_secrets:/run/rcannon-secrets:ro" not in api_svc["volumes"]
     assert api_svc["environment"]["RCANNON_PROVIDER_MODE"] == "${RCANNON_PROVIDER_MODE:-auto}"
     assert (
         api_svc["environment"]["RCANNON_UI_BEARER_TOKEN_FILE"]
@@ -414,67 +404,10 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
         == "/run/rcannon-secrets/rcannon_operator_bearer_token"
     )
 
-    assert "@sha256:" in ui_svc["image"]
-    assert ui_svc["image"].startswith("registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:")
-    assert ui_svc["user"] == "1000:1000"
-    assert ui_svc["read_only"] is True
-    assert "ALL" in ui_svc["cap_drop"]
-    assert "no-new-privileges:true" in ui_svc["security_opt"]
-    assert ui_svc["ports"] == ["127.0.0.1:${RCANNON_UI_PORT:-3080}:3080"]
-    assert set(ui_svc["networks"]) == {"ui_edge", "ui_api", "ui_db"}
-    assert "rcannon_ui_secrets:/run/rcannon-secrets:ro" in ui_svc["volumes"]
-    assert "rcannon_api_secrets:/run/rcannon-secrets:ro" not in ui_svc["volumes"]
-    assert "rcannon_bootstrap_secrets:/run/rcannon-secrets:ro" not in ui_svc["volumes"]
-    assert ui_svc["depends_on"]["librechat-bootstrap"]["condition"] == "service_completed_successfully"
-    assert ui_svc["depends_on"]["rcannon"]["condition"] == "service_healthy"
-    assert ui_svc["depends_on"]["mongodb"]["condition"] == "service_healthy"
-    assert ui_svc["depends_on"]["librechat-secrets"]["condition"] == "service_completed_successfully"
-    ui_env = ui_svc["environment"]
-    assert "OPENAI_API_KEY" not in ui_env
-    assert ui_env["RCANNON_UI_BEARER_TOKEN_FILE"] == "/run/rcannon-secrets/rcannon_ui_bearer_token"
-    assert ui_env["ENDPOINTS"] == "custom"
-    assert ui_env["ALLOW_EMAIL_LOGIN"] == "true"
-    assert ui_env["ALLOW_REGISTRATION"] == "false"
-    assert ui_env["ALLOW_SOCIAL_LOGIN"] == "false"
-    assert ui_env["ALLOW_SOCIAL_REGISTRATION"] == "false"
-    assert ui_env["SEARCH"] == "false"
-
-    assert mongo_svc["image"].startswith("mongo:8.0@sha256:")
-    assert "ports" not in mongo_svc
-    assert set(mongo_svc["networks"]) == {"ui_db"}
-    assert "ALL" in mongo_svc["cap_drop"]
-    assert "no-new-privileges:true" in mongo_svc["security_opt"]
-    assert "rcannon_mongo_data:/data/db" in mongo_svc["volumes"]
-
-    assert ui_svc["profiles"] == mongo_svc["profiles"] == bootstrap_svc["profiles"] == ["librechat"]
-    assert bootstrap_svc["restart"] == "no"
-    assert bootstrap_svc["image"] == ui_svc["image"]
-    assert bootstrap_svc["user"] == "1000:1000"
-    assert bootstrap_svc["read_only"] is True
-    assert "ALL" in bootstrap_svc["cap_drop"]
-    assert "no-new-privileges:true" in bootstrap_svc["security_opt"]
-    assert "ports" not in bootstrap_svc
-    assert set(bootstrap_svc["networks"]) == {"ui_db"}
-    assert "rcannon_bootstrap_secrets:/run/rcannon-secrets:ro" in bootstrap_svc["volumes"]
-    assert "rcannon_api_secrets:/run/rcannon-secrets:ro" not in bootstrap_svc["volumes"]
-    assert "rcannon_ui_secrets:/run/rcannon-secrets:ro" not in bootstrap_svc["volumes"]
-    assert (
-        bootstrap_svc["environment"]["LIBRECHAT_ADMIN_PASSWORD_FILE"]
-        == "/run/rcannon-secrets/librechat_admin_password"
-    )
-    assert "OPENAI_API_KEY" not in bootstrap_svc["environment"]
-
-    assert base["networks"]["ui_api"]["internal"] is True
-    assert base["networks"]["ui_db"]["internal"] is True
     assert base["networks"]["telemetry_net"]["internal"] is True
-    for volume_name in (
-        "rcannon_api_data",
-        "rcannon_mongo_data",
-        "rcannon_api_secrets",
-        "rcannon_ui_secrets",
-        "rcannon_bootstrap_secrets",
-    ):
+    for volume_name in ("rcannon_api_data", "rcannon_api_secrets"):
         assert volume_name in base["volumes"]
+    assert set(base["volumes"].keys()) == {"rcannon_api_data", "rcannon_api_secrets"}
 
     # Overlays scope LLM secret and kubeconfig mounts strictly to api
     assert list(openai_overlay["services"].keys()) == ["rcannon"]
@@ -485,6 +418,45 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     )
     assert list(kube["services"].keys()) == ["rcannon"]
     assert any(vol.endswith(":ro") for vol in kube["services"]["rcannon"]["volumes"])
+
+
+def test_demo_compose_overlay_and_secret_scripts(tmp_path: Path):
+    demo_compose = yaml.safe_load(
+        (REPO_ROOT / "infrastructure" / "compose" / "compose.demo.yaml").read_text(encoding="utf-8")
+    )
+    assert set(demo_compose["services"].keys()) == {"secrets-init", "rcannon", "demo"}
+    assert demo_compose["services"]["rcannon"]["ports"] == [
+        "127.0.0.1:${RCANNON_DEMO_PORT:-8000}:8000"
+    ]
+    assert demo_compose["services"]["rcannon"]["environment"]["RCANNON_PROVIDER_MODE"] == "openai"
+    assert demo_compose["services"]["demo"]["image"] == "python:3.12-slim-bookworm"
+    assert (REPO_ROOT / "infrastructure" / "compose" / "scripts" / "demo-incident.py").is_file()
+
+    out_api = tmp_path / "api_secrets"
+    out_api.mkdir()
+    script = REPO_ROOT / "infrastructure" / "compose" / "scripts" / "init-compose-secrets.py"
+    env = os.environ.copy()
+    env["SKIP_CHOWN"] = "1"
+    env["API_OUT_DIR"] = str(out_api)
+    env["SEED_DIR"] = str(tmp_path / "seed")
+    proc = subprocess.run(
+        [sys.executable, str(script)],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert proc.returncode == 0
+    ui_tok = (out_api / "rcannon_ui_bearer_token").read_text(encoding="utf-8").strip()
+    op_tok = (out_api / "rcannon_operator_bearer_token").read_text(encoding="utf-8").strip()
+    assert ui_tok and op_tok and ui_tok != op_tok
+
+    dev_secrets_script = REPO_ROOT / "infrastructure" / "compose" / "scripts" / "init-dev-secrets.sh"
+    subprocess.run(["bash", "-n", str(dev_secrets_script)], check=True)
+    dev_script_text = dev_secrets_script.read_text(encoding="utf-8")
+    assert "ui_bearer_token.secret" in dev_script_text
+    assert "operator_bearer_token.secret" in dev_script_text
+    assert "librechat" not in dev_script_text.lower()
 
 
 def test_k8s_bootstrap_wires_readonly_kind_kubeconfig_and_compose_override():

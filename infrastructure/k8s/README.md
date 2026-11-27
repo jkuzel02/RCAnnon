@@ -228,8 +228,8 @@ The script also applies `rbac/rcannon-readonly.yaml`, mints a scoped read-only
 writes gitignored `infrastructure/compose/kubeconfig/config` plus
 `compose.override.yaml` (`https://local-control-plane:6443` over the `kind`
 Docker network) so `docker compose up -d` connects the RCAnnon API to `kind-local`.
-Add `--profile librechat` to include the example frontend. Re-run `bootstrap.sh`
-to refresh the read-only token or regenerate an override from an older checkout.
+Re-run `bootstrap.sh` to refresh the read-only token or regenerate an override
+from an older checkout.
 
 If you bootstrapped an existing cluster before the directory move, rerun the
 bootstrap after updating your checkout. This reapplies the Flux source and

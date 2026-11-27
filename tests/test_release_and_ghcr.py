@@ -157,9 +157,7 @@ def test_container_docs_changelog_dockerfile_labels_and_compose_image_var():
     assert compose["services"]["secrets-init"]["image"] == "python:3.12-slim-bookworm"
     assert "build" not in compose["services"]["rcannon"]
     assert "build" not in compose["services"]["secrets-init"]
-    assert compose["services"]["librechat"]["image"].startswith(
-        "registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:"
-    )
+    assert set(compose["services"].keys()) == {"secrets-init", "rcannon"}
 
 
 def test_release_please_extra_files_sync_doc_versions():

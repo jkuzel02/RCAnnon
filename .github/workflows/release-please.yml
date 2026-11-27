@@ -12,7 +12,6 @@ on:
       - '.dockerignore'
       - 'compose.yaml'
       - 'infrastructure/compose/compose.*.yaml'
-      - 'infrastructure/compose/librechat.yaml'
       - 'infrastructure/compose/scripts/**'
       - 'infrastructure/compose/.env.example'
       - 'infrastructure/k8s/rbac/**'

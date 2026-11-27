@@ -20,8 +20,8 @@ uv run --no-sync pytest tests/test_rca_workflows.py tests/test_mas_workflow.py t
 # Evidence collection & redaction
 uv run --no-sync pytest tests/test_evidence_collector.py tests/test_evidence_bundles.py tests/test_evidence_redaction.py
 
-# FastAPI facade, Docker Compose & LibreChat config/scripts
-uv run --no-sync pytest tests/test_api.py tests/test_api_storage.py tests/test_compose_deployment.py tests/test_librechat_integration.py
+# FastAPI facade and Docker Compose config/scripts
+uv run --no-sync pytest tests/test_api.py tests/test_api_storage.py tests/test_compose_deployment.py
 
 # English-only documentation CI check
 uv run --no-project --with-requirements .github/scripts/requirements.txt python .github/scripts/check_english_docs.py --exclude docs/proposal.md README.update.md docs/*.md infrastructure/compose/README.md infrastructure/compose/secrets/README.md

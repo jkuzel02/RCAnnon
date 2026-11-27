@@ -1,46 +1,69 @@
-# Deploy RCAnnon with Docker Compose
+# Deploy with Docker Compose
 
-Use this guide after the [browser demo](getting-started.md) when you want to analyze your own Kubernetes evidence. You need a Kubernetes API reachable from Docker, a read-only kubeconfig for the target, and an OpenAI-compatible API key. Run the commands from the repository root.
+Run the **RCAnnon API** with Docker Compose using two commands: optionally spin up a local Kubernetes target cluster, then start the API container.
 
-## 1. Connect the Kubernetes cluster
-
-Place the read-only kubeconfig at `infrastructure/compose/kubeconfig/config`. Keep any referenced CA or client certificate files in the same directory, or embed them in the kubeconfig. The container runs as UID `10001`. Make the files readable to that user. See [kubeconfig mount requirements](../infrastructure/compose/README.md#mounting-read-only-target-kubeconfig-and-ca-files).
-
-Create a root `.env` with these values from your cluster and model provider. Replace `my-context` and `my-namespace` with your kubeconfig context and target namespace. `target` is the name you will use in chat.
-
-```dotenv
-RCANNON_KUBE_CONTEXT=my-context
-RCANNON_TARGET_ALIAS=target
-RCANNON_ALLOWED_SCOPES={"target":["my-namespace"]}
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o-mini
-```
-
-## 2. Add your model API key and start
-
-Save the key as the only line in `infrastructure/compose/secrets/llm_api_key.secret`. The mounted file must be readable to UID `10001`. Set `LIBRECHAT_ADMIN_PASSWORD` in `.env` before the first start to choose a password for the management UI.
+## 1. Optional: Spin Up a Local Kind Target Cluster
 
 ```sh
-docker compose --profile librechat -f compose.yaml \
-  -f infrastructure/compose/compose.kube.yaml \
-  -f infrastructure/compose/compose.openai.yaml \
-  up --detach --wait
+bash infrastructure/k8s/bootstrap.sh
 ```
 
-Open [RCAnnon](http://127.0.0.1:3080), sign in as `admin@rcannon.local` with the password you set, and select **rcannon-optimal**. Start a chat with your alias and namespace.
+This creates a local `kind` cluster (`lab`, namespace `demo`) with failing sample workloads and exports a scoped read-only kubeconfig for RCAnnon. See [Kubernetes Lab](../infrastructure/k8s/README.md) for details.
 
-```text
-/rca context=target namespace=my-namespace -- The API workload is restarting
+## 2. Configure Your OpenAI API Key
+
+```sh
+cp .env.example .env
+# Edit .env and set OPENAI_API_KEY=...
 ```
 
-### If you use the bundled Kind lab
+## 3. Start the RCAnnon API
 
-[Bootstrap the lab](../infrastructure/k8s/README.md#bootstrap) first. It generates the kubeconfig and `compose.override.yaml`. Use that override in place of `infrastructure/compose/compose.kube.yaml` and set `RCANNON_ALLOWED_SCOPES={"lab":["demo"]}` in `.env`. Send the request with `context=lab namespace=demo`.
+```sh
+docker compose up --detach --wait
+```
 
-### If startup or diagnosis fails
+Compose automatically initializes API bearer tokens (`secrets-init`) and exposes `rcannon` on loopback `http://127.0.0.1:8000` (override with `RCANNON_PORT` in `.env`).
 
-- **LibreChat won't start.** Run `docker compose ps -a` and check `docker compose logs librechat-bootstrap`. A first start creates the local administrator. An existing installation keeps its account and password.
-- **Insufficient Evidence.** Verify your target alias and namespace in `.env`. Check [Docker reachability to the Kubernetes API](../infrastructure/compose/README.md#linux-and-macos-reachability-to-kind-and-remote-clusters), especially if the kubeconfig uses a loopback address.
-- **Provider unavailable.** Confirm that your provider supports Chat Completions and lists the exact model ID you supplied. See [live model configuration](../infrastructure/compose/README.md#enabling-live-openai-compatible-api-inference).
+## 4. Call the API with `curl`
 
-Use the same Compose files with `down` to stop the stack and keep its data.
+Read the generated bearer tokens from the running container:
+
+```sh
+UI_TOKEN=$(docker compose exec -T rcannon cat /run/rcannon-secrets/rcannon_ui_bearer_token)
+OP_TOKEN=$(docker compose exec -T rcannon cat /run/rcannon-secrets/rcannon_operator_bearer_token)
+```
+
+Verify health, list models, run an OpenAI-compatible investigation, and inspect recorded runs:
+
+```sh
+curl -fsS http://127.0.0.1:8000/healthz
+
+curl -fsS \
+  -H "Authorization: Bearer $UI_TOKEN" \
+  http://127.0.0.1:8000/v1/models
+
+curl -fsS http://127.0.0.1:8000/v1/chat/completions \
+  -H "Authorization: Bearer $UI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "rcannon-optimal",
+    "messages": [
+      {"role": "user", "content": "/rca context=lab namespace=demo -- checkout-api is failing"}
+    ]
+  }'
+
+curl -fsS \
+  -H "Authorization: Bearer $OP_TOKEN" \
+  http://127.0.0.1:8000/api/v1/runs
+```
+
+If you connect your own frontend or OpenAI-compatible client, point its custom endpoint URL to `http://127.0.0.1:8000/v1` (or `http://rcannon:8000/v1` on a shared Docker network) with `$UI_TOKEN` as the API key.
+
+## 5. Stop the Stack
+
+```sh
+docker compose down
+```
+
+For production overrides, custom builds, secret rotation, and Kubernetes mounts, see [Compose Operations](../infrastructure/compose/README.md).

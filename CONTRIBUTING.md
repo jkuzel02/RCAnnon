@@ -127,13 +127,13 @@ uv sync
 uv run --no-sync pytest tests -rx
 ```
 
-All `120+` offline unit, contract, evidence, API, Compose, and LibreChat tests run in seconds without live LLM credentials or a cluster.
+All `120+` offline unit, contract, evidence, API, and Compose tests run in seconds without live LLM credentials or a cluster.
 
 To build and verify the Compose stack from local source:
 
 ```sh
 docker compose config --quiet
-docker compose --profile librechat -f compose.yaml -f infrastructure/compose/compose.build.yaml up -d --build --wait
+docker compose -f compose.yaml -f infrastructure/compose/compose.build.yaml up -d --build --wait
 ```
 
 Before pushing Markdown edits, verify English-only docs compliance:
@@ -164,7 +164,7 @@ Clean up anytime with `kind delete cluster --name local`. See [infrastructure/k8
 - [x] **Core Architecture & `v1` Contracts** — Evidence snapshots, workflow contracts, golden fixtures ([docs/architecture.md](./docs/architecture.md))
 - [x] **Read-Only Collector & Sanitized Bundles** — K8s API adapter, RBAC manifests, credential redaction (`rca/evidence/`)
 - [x] **LangGraph Workflows & MAS Validation** — `base`, `optimal`, `mas`, and claim verification (`rca/workflows/`)
-- [x] **FastAPI Facade, Multi-Arch Container & LibreChat UI** — OpenAI-compatible API, Docker Compose stack, GHCR releases with SLSA attestations (`rca/api/`, `compose.yaml`)
+- [x] **FastAPI Facade & Multi-Arch Container** — OpenAI-compatible API, Docker Compose stack, GHCR releases with SLSA attestations (`rca/api/`, `compose.yaml`)
 - [ ] **Privacy-Safe OpenTelemetry Export** — OTLP traces and metrics via Tempo/Prometheus/Grafana ([Issue #15](https://github.com/jkuzel02/RCAnnon/issues/15))
 - [ ] **16-Scenario Evidence Capture** — Live snapshot capture across all Kind lab scenarios ([Issue #16](https://github.com/jkuzel02/RCAnnon/issues/16))
 - [ ] **Multi-Run Variant Benchmarking & Resilience Drills** — Paired evaluation across `base`, `optimal`, and `mas` ([Issue #17](https://github.com/jkuzel02/RCAnnon/issues/17))
@@ -181,7 +181,7 @@ RCAnnon/
 │   └── workflows/   # base, optimal, parallel mas workflows & MAS evidence validation
 ├── prompts/         # Locked versioned system prompts (base.md, optimal.md, mas/*.md)
 ├── scenarios/       # 16 reproducible Kubernetes incident specs (01..16) with app/ + rca.json
-├── infrastructure/  # Docker Compose + LibreChat packaging & Kind/Flux lab
+├── infrastructure/  # Docker Compose packaging & Kind/Flux lab
 ├── docs/            # Architecture, container image, scenarios, testing, and user guides
 └── tests/           # Offline pytest suites and live prompt checks
 ```
