@@ -86,14 +86,14 @@ def test_librechat_config_hardening_and_single_endpoint():
     assert file_cfg["endpoints"]["RCAnnon"]["disabled"] is True
 
     endpoints = cfg["endpoints"]
-    assert endpoints["allowedAddresses"] == ["api:8000"]
+    assert endpoints["allowedAddresses"] == ["rcannon:8000"]
     assert endpoints["all"]["titleConvo"] is False
     assert len(endpoints["custom"]) == 1
 
     ep = endpoints["custom"][0]
     assert ep["name"] == "RCAnnon"
     assert ep["apiKey"] == "${RCANNON_UI_BEARER_TOKEN}"
-    assert ep["baseURL"] == "http://api:8000/v1"
+    assert ep["baseURL"] == "http://rcannon:8000/v1"
     assert ep["models"] == {
         "default": ["rcannon-base", "rcannon-optimal", "rcannon-mas"],
         "fetch": False,
@@ -370,8 +370,17 @@ def test_init_compose_secrets_isolates_volumes_is_idempotent_and_validates_passw
         "LIBRECHAT_ADMIN_PASSWORD": "CustomCanaryPassword123",
     }
 
+    api_init = subprocess.run(
+        [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT), "api"],
+        env={**env, "LIBRECHAT_ADMIN_PASSWORD": "shortpw"},
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    assert not ui_dir.exists()
+    assert not bootstrap_dir.exists()
     first = subprocess.run(
-        [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT)],
+        [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT), "librechat"],
         env=env,
         text=True,
         capture_output=True,
@@ -407,13 +416,15 @@ def test_init_compose_secrets_isolates_volumes_is_idempotent_and_validates_passw
         == "CustomCanaryPassword123"
     )
     for secret_val in (ui_tok, op_tok, "CustomCanaryPassword123"):
+        assert secret_val not in api_init.stdout
+        assert secret_val not in api_init.stderr
         assert secret_val not in first.stdout
         assert secret_val not in first.stderr
 
     # Re-run preserves existing generated secrets
     jwt_before = (ui_dir / "librechat_jwt_secret").read_text(encoding="utf-8").strip()
     subprocess.run(
-        [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT)],
+        [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT), "librechat"],
         env={k: v for k, v in env.items() if k != "LIBRECHAT_ADMIN_PASSWORD"},
         text=True,
         capture_output=True,
@@ -425,7 +436,7 @@ def test_init_compose_secrets_isolates_volumes_is_idempotent_and_validates_passw
     # Short or multiline LIBRECHAT_ADMIN_PASSWORD fails closed without echoing
     for bad_pw in ("shortpw", "line1\nline2-long-enough"):
         failed = subprocess.run(
-            [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT)],
+            [sys.executable, str(INIT_COMPOSE_SECRETS_SCRIPT), "librechat"],
             env={**env, "LIBRECHAT_ADMIN_PASSWORD": bad_pw},
             text=True,
             capture_output=True,

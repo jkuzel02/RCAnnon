@@ -370,10 +370,11 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     assert "LIBRECHAT_ADMIN_PASSWORD=" in root_env_example
 
     secrets_init_svc = base["services"]["secrets-init"]
-    api_svc = base["services"]["api"]
-    ui_svc = base["services"]["ui"]
+    librechat_secrets_svc = base["services"]["librechat-secrets"]
+    api_svc = base["services"]["rcannon"]
+    ui_svc = base["services"]["librechat"]
     mongo_svc = base["services"]["mongodb"]
-    bootstrap_svc = base["services"]["ui-bootstrap"]
+    bootstrap_svc = base["services"]["librechat-bootstrap"]
 
     assert secrets_init_svc["network_mode"] == "none"
     assert secrets_init_svc["read_only"] is True
@@ -381,11 +382,21 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     assert "ALL" in secrets_init_svc["cap_drop"]
     assert "no-new-privileges:true" in secrets_init_svc["security_opt"]
     assert "rcannon_api_secrets:/out/api" in secrets_init_svc["volumes"]
-    assert "rcannon_ui_secrets:/out/ui" in secrets_init_svc["volumes"]
-    assert "rcannon_bootstrap_secrets:/out/bootstrap" in secrets_init_svc["volumes"]
+    assert secrets_init_svc["command"] == ["api"]
+    assert "environment" not in secrets_init_svc
+    assert "rcannon_ui_secrets:/out/ui" not in secrets_init_svc["volumes"]
+    assert "rcannon_bootstrap_secrets:/out/bootstrap" not in secrets_init_svc["volumes"]
+    assert librechat_secrets_svc["profiles"] == ["librechat"]
+    assert librechat_secrets_svc["command"] == ["librechat"]
+    assert librechat_secrets_svc["network_mode"] == "none"
+    assert "rcannon_api_secrets:/out/api:ro" in librechat_secrets_svc["volumes"]
+    assert "rcannon_ui_secrets:/out/ui" in librechat_secrets_svc["volumes"]
+    assert "rcannon_bootstrap_secrets:/out/bootstrap" in librechat_secrets_svc["volumes"]
 
     assert api_svc["user"] == "10001:10001"
     assert api_svc["read_only"] is True
+    assert "profiles" not in api_svc
+    assert set(api_svc["depends_on"]) == {"secrets-init"}
     assert "ALL" in api_svc["cap_drop"]
     assert "no-new-privileges:true" in api_svc["security_opt"]
     assert "ports" not in api_svc
@@ -414,10 +425,10 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     assert "rcannon_ui_secrets:/run/rcannon-secrets:ro" in ui_svc["volumes"]
     assert "rcannon_api_secrets:/run/rcannon-secrets:ro" not in ui_svc["volumes"]
     assert "rcannon_bootstrap_secrets:/run/rcannon-secrets:ro" not in ui_svc["volumes"]
-    assert ui_svc["depends_on"]["ui-bootstrap"]["condition"] == "service_completed_successfully"
-    assert ui_svc["depends_on"]["api"]["condition"] == "service_healthy"
+    assert ui_svc["depends_on"]["librechat-bootstrap"]["condition"] == "service_completed_successfully"
+    assert ui_svc["depends_on"]["rcannon"]["condition"] == "service_healthy"
     assert ui_svc["depends_on"]["mongodb"]["condition"] == "service_healthy"
-    assert ui_svc["depends_on"]["secrets-init"]["condition"] == "service_completed_successfully"
+    assert ui_svc["depends_on"]["librechat-secrets"]["condition"] == "service_completed_successfully"
     ui_env = ui_svc["environment"]
     assert "OPENAI_API_KEY" not in ui_env
     assert ui_env["RCANNON_UI_BEARER_TOKEN_FILE"] == "/run/rcannon-secrets/rcannon_ui_bearer_token"
@@ -435,7 +446,7 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
     assert "no-new-privileges:true" in mongo_svc["security_opt"]
     assert "rcannon_mongo_data:/data/db" in mongo_svc["volumes"]
 
-    assert "profiles" not in bootstrap_svc
+    assert ui_svc["profiles"] == mongo_svc["profiles"] == bootstrap_svc["profiles"] == ["librechat"]
     assert bootstrap_svc["restart"] == "no"
     assert bootstrap_svc["image"] == ui_svc["image"]
     assert bootstrap_svc["user"] == "1000:1000"
@@ -466,14 +477,14 @@ def test_dockerfile_dockerignore_and_compose_security_posture():
         assert volume_name in base["volumes"]
 
     # Overlays scope LLM secret and kubeconfig mounts strictly to api
-    assert list(openai_overlay["services"].keys()) == ["api"]
-    assert openai_overlay["services"]["api"]["environment"]["RCANNON_PROVIDER_MODE"] == "openai"
+    assert list(openai_overlay["services"].keys()) == ["rcannon"]
+    assert openai_overlay["services"]["rcannon"]["environment"]["RCANNON_PROVIDER_MODE"] == "openai"
     assert (
-        openai_overlay["services"]["api"]["environment"]["OPENAI_API_KEY_FILE"]
+        openai_overlay["services"]["rcannon"]["environment"]["OPENAI_API_KEY_FILE"]
         == "/run/secrets/rcannon_llm_api_key"
     )
-    assert list(kube["services"].keys()) == ["api"]
-    assert any(vol.endswith(":ro") for vol in kube["services"]["api"]["volumes"])
+    assert list(kube["services"].keys()) == ["rcannon"]
+    assert any(vol.endswith(":ro") for vol in kube["services"]["rcannon"]["volumes"])
 
 
 def test_k8s_bootstrap_wires_readonly_kind_kubeconfig_and_compose_override():
@@ -481,5 +492,6 @@ def test_k8s_bootstrap_wires_readonly_kind_kubeconfig_and_compose_override():
     assert "rbac/rcannon-readonly.yaml" in bootstrap
     assert "https://local-control-plane:6443" in bootstrap
     assert "compose.override.yaml" in bootstrap
+    assert "\n  rcannon:\n" in bootstrap
     assert "infrastructure/compose/kubeconfig" in bootstrap or "../compose/kubeconfig" in bootstrap
     assert "insecure-skip-tls-verify" not in bootstrap

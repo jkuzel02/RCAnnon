@@ -132,7 +132,7 @@ To build and verify the Compose stack from local source:
 
 ```sh
 docker compose config --quiet
-docker compose up -d --build --wait
+docker compose --profile librechat -f compose.yaml -f infrastructure/compose/compose.build.yaml up -d --build --wait
 ```
 
 Before pushing Markdown edits, verify English-only docs compliance:

@@ -6,6 +6,7 @@ Never prints any secret values to stdout or stderr.
 
 from __future__ import annotations
 
+import argparse
 import os
 import secrets
 import tempfile
@@ -61,25 +62,13 @@ def _resolve_admin_password(seed_dir: Path, bootstrap_out_dir: Path) -> str:
     )
 
 
-def main() -> int:
-    seed_dir = Path(os.environ.get("SEED_DIR", "/seed-secrets"))
-    api_out_dir = Path(os.environ.get("API_OUT_DIR", "/out/api"))
-    ui_out_dir = Path(os.environ.get("UI_OUT_DIR", "/out/ui"))
-    bootstrap_out_dir = Path(os.environ.get("BOOTSTRAP_OUT_DIR", "/out/bootstrap"))
-
+def _initialize_api(seed_dir: Path, api_out_dir: Path, *, skip_chown: bool) -> None:
     api_uid = int(os.environ.get("API_UID", "10001"))
     api_gid = int(os.environ.get("API_GID", "10001"))
-    ui_uid = int(os.environ.get("UI_UID", "1000"))
-    ui_gid = int(os.environ.get("UI_GID", "1000"))
-    skip_chown = os.environ.get("SKIP_CHOWN", "") == "1"
-
     _ensure_dir(api_out_dir, api_uid, api_gid, skip_chown=skip_chown)
-    _ensure_dir(ui_out_dir, ui_uid, ui_gid, skip_chown=skip_chown)
-    _ensure_dir(bootstrap_out_dir, ui_uid, ui_gid, skip_chown=skip_chown)
 
     ui_bearer_token = (
         _read_nonempty_file(api_out_dir / "rcannon_ui_bearer_token")
-        or _read_nonempty_file(ui_out_dir / "rcannon_ui_bearer_token")
         or _read_nonempty_file(seed_dir / "ui_bearer_token.secret")
         or secrets.token_hex(32)
     )
@@ -90,14 +79,6 @@ def main() -> int:
         api_gid,
         skip_chown=skip_chown,
     )
-    _write_secret(
-        ui_out_dir / "rcannon_ui_bearer_token",
-        ui_bearer_token,
-        ui_uid,
-        ui_gid,
-        skip_chown=skip_chown,
-    )
-
     operator_bearer_token = (
         _read_nonempty_file(api_out_dir / "rcannon_operator_bearer_token")
         or _read_nonempty_file(seed_dir / "operator_bearer_token.secret")
@@ -110,6 +91,27 @@ def main() -> int:
         operator_bearer_token,
         api_uid,
         api_gid,
+        skip_chown=skip_chown,
+    )
+
+
+def _initialize_librechat(seed_dir: Path, api_out_dir: Path, *, skip_chown: bool) -> None:
+    ui_out_dir = Path(os.environ.get("UI_OUT_DIR", "/out/ui"))
+    bootstrap_out_dir = Path(os.environ.get("BOOTSTRAP_OUT_DIR", "/out/bootstrap"))
+    ui_uid = int(os.environ.get("UI_UID", "1000"))
+    ui_gid = int(os.environ.get("UI_GID", "1000"))
+    ui_bearer_token = _read_nonempty_file(api_out_dir / "rcannon_ui_bearer_token")
+    if ui_bearer_token is None:
+        raise SystemExit("Initialize the RCAnnon API tokens before starting LibreChat.")
+    admin_password = _resolve_admin_password(seed_dir, bootstrap_out_dir)
+
+    _ensure_dir(ui_out_dir, ui_uid, ui_gid, skip_chown=skip_chown)
+    _ensure_dir(bootstrap_out_dir, ui_uid, ui_gid, skip_chown=skip_chown)
+    _write_secret(
+        ui_out_dir / "rcannon_ui_bearer_token",
+        ui_bearer_token,
+        ui_uid,
+        ui_gid,
         skip_chown=skip_chown,
     )
 
@@ -146,7 +148,6 @@ def main() -> int:
             skip_chown=skip_chown,
         )
 
-    admin_password = _resolve_admin_password(seed_dir, bootstrap_out_dir)
     _write_secret(
         bootstrap_out_dir / "librechat_admin_password",
         admin_password,
@@ -154,6 +155,17 @@ def main() -> int:
         ui_gid,
         skip_chown=skip_chown,
     )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("component", choices=("api", "librechat"))
+    component = parser.parse_args().component
+    seed_dir = Path(os.environ.get("SEED_DIR", "/seed-secrets"))
+    api_out_dir = Path(os.environ.get("API_OUT_DIR", "/out/api"))
+    skip_chown = os.environ.get("SKIP_CHOWN", "") == "1"
+    initialize = _initialize_api if component == "api" else _initialize_librechat
+    initialize(seed_dir, api_out_dir, skip_chown=skip_chown)
     print("Initialized isolated Docker Compose runtime secrets.")
     return 0
 
