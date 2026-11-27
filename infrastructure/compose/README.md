@@ -71,7 +71,7 @@ docker compose exec -it librechat npm run create-user
 
 ## Using Prebuilt GHCR Images
 
-Docker Compose uses `ghcr.io/jkuzel02/rcannon:latest`. See [Container Image](../../docs/container-image.md) for pinned deployments, supported architectures, and provenance. The current release is `0.1.6`. <!-- x-release-please-version -->
+Docker Compose uses `ghcr.io/jkuzel02/rcannon:latest`. See [Container Image](../../docs/container-image.md) for pinned deployments, supported architectures, and provenance.
 
 For a local source build, use the [contributor commands](../../CONTRIBUTING.md#3-minute-setup--offline-test-loop).
 

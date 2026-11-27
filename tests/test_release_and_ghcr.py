@@ -170,7 +170,6 @@ def test_release_please_extra_files_sync_doc_versions():
     extra_files = config["packages"]["."]["extra-files"]
     expected_paths = {
         "docs/container-image.md",
-        "infrastructure/compose/README.md",
     }
     configured = {entry["path"]: entry["type"] for entry in extra_files}
     assert expected_paths.issubset(configured.keys())

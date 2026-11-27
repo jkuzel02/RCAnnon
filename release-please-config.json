@@ -20,8 +20,7 @@
   "packages": {
     ".": {
       "extra-files": [
-        { "type": "generic", "path": "docs/container-image.md" },
-        { "type": "generic", "path": "infrastructure/compose/README.md" }
+        { "type": "generic", "path": "docs/container-image.md" }
       ]
     }
   }
