@@ -4,6 +4,13 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.1.8](https://github.com/jkuzel02/RCAnnon/compare/0.1.7...0.1.8) (2026-11-27)
+
+
+### Features
+
+* simplify first use and make LibreChat optional ([966cdf0](https://github.com/jkuzel02/RCAnnon/commit/966cdf037872779d00df133124e0d5b6851c44be))
+
 ## [0.1.7](https://github.com/jkuzel02/RCAnnon/compare/0.1.6...0.1.7) (2026-11-27)
 
 
