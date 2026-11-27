@@ -163,12 +163,12 @@ class PromptRunnerTest(TestCase):
 
     def test_logs_and_metrics_examples_match_the_runtime_contract(self):
         pattern = re.compile(
-            r"\*\*Input:\*\*\s*```json\n(.*?)\n```\s*"
-            r"\*\*Output:\*\*\s*```json\n(.*?)\n```",
-            re.DOTALL,
+            r"^\*\*(?:Input|Output):\*\*\n(?:\n)*(?:```json\n(.*?)\n```|((?: {4}[^\n]*\n)+))",
+            re.DOTALL | re.MULTILINE,
         )
         for specialist, source in (("logs-connectivity", "logs"), ("metrics-telemetry", "metrics")):
-            examples = pattern.findall(self.prompts[f"mas/{specialist}.md"])
+            blocks = [fenced or indented for fenced, indented in pattern.findall(self.prompts[f"mas/{specialist}.md"])]
+            examples = list(zip(blocks[::2], blocks[1::2], strict=True))
             self.assertTrue(examples)
             self.assertTrue(any(json.loads(payload)[source] == [] for payload, _ in examples))
             validator = Draft202012Validator(REPORT_SCHEMAS[specialist])
