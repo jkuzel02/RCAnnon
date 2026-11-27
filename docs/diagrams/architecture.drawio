@@ -275,7 +275,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="chat-client" value="&lt;b style=&quot;color:#172941;font-size:15px&quot;&gt;API client&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color:#435972;font-size:12px&quot;&gt;curl, custom UI, or SDK&lt;/span&gt;" style="rounded=1;absoluteArcSize=1;arcSize=14;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;spacingLeft=22;fillColor=#ffffff;strokeColor=#a9b9cb;strokeWidth=1.5;fontFamily=Arial;" vertex="1" parent="1"><mxGeometry x="24" y="78" width="200" height="69" as="geometry" /></mxCell></root>
+        <mxCell id="chat-client" value="&lt;b style=&quot;color:#172941;font-size:15px&quot;&gt;API client&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color:#435972;font-size:12px&quot;&gt;curl, custom UI, or SDK&lt;/span&gt;" style="rounded=1;absoluteArcSize=1;arcSize=14;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;spacingLeft=22;fillColor=#ffffff;strokeColor=#a9b9cb;strokeWidth=1.5;fontFamily=Arial;" vertex="1" parent="1"><mxGeometry x="24" y="78" width="200" height="69" as="geometry" /></mxCell><mxCell id="edge-result-sqlite" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0;exitY=0.3;entryX=0.25;entryY=1;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="result" target="sqlite"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="275" y="426" /></Array></mxGeometry></mxCell></root>
     </mxGraphModel>
   </diagram>
 </mxfile>
