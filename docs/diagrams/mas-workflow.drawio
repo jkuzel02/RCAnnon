@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <!-- LangGraph icon from Simple Icons (https://simpleicons.org/). -->
+  <diagram id="rcannon-mas-workflow" name="MAS workflow">
+    <mxGraphModel dx="900" dy="408" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="408" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="workflow-boundary" value="" style="rounded=1;absoluteArcSize=1;arcSize=18;strokeWidth=1.5;fillColor=#f1f6fc;strokeColor=#8fa9c7;" vertex="1" parent="1">
+          <mxGeometry x="1" y="1" width="898" height="406" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-0" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.172;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="snapshot" target="config">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="368" y="102" />
+              <mxPoint x="160" y="102" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-1" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="snapshot" target="logs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-2" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.828;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="snapshot" target="metrics">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="532" y="102" />
+              <mxPoint x="740" y="102" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-3" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.172;entryY=0;" edge="1" parent="1" source="config" target="coordinator">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="205" />
+              <mxPoint x="368" y="205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-4" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="logs" target="coordinator">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-5" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.828;entryY=0;" edge="1" parent="1" source="metrics" target="coordinator">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="740" y="205" />
+              <mxPoint x="532" y="205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-6" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="coordinator" target="report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="snapshot" value="&lt;b style=&quot;color:#245ba8;font-size:18px&quot;&gt;Incident snapshot&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color:#435972;font-size:12px&quot;&gt;Sanitized Kubernetes evidence&lt;/span&gt;" style="rounded=1;absoluteArcSize=1;arcSize=14;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fillColor=#ffffff;strokeColor=#8db0e2;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="325" y="22" width="250" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="config" value="&lt;b style=&quot;color:#14675b;font-size:18px&quot;&gt;Configuration &amp;amp; events&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color:#435972;font-size:12px&quot;&gt;Resources and events&lt;/span&gt;" style="rounded=1;absoluteArcSize=1;arcSize=14;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fillColor=#f4fbf8;strokeColor=#79b9ab;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="35" y="122" width="250" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="logs" value="&lt;b style=&quot;color:#14675b;font-size:18px&quot;&gt;Logs &amp;amp; connectivity&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color:#435972;font-size:12px&quot;&gt;Logs and checks&lt;/span&gt;" style="rounded=1;absoluteArcSize=1;arcSize=14;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fillColor=#f4fbf8;strokeColor=#79b9ab;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="325" y="122" width="250" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="metrics" value="&lt;b style=&quot;color:#14675b;font-size:18px&quot;&gt;Metrics &amp;amp; telemetry&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color:#435972;font-size:12px&quot;&gt;Metrics, time window, resource limits&lt;/span&gt;" style="rounded=1;absoluteArcSize=1;arcSize=14;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fillColor=#f4fbf8;strokeColor=#79b9ab;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="615" y="122" width="250" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="coordinator" value="&lt;b style=&quot;color:#245ba8;font-size:18px&quot;&gt;Coordinator&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color:#435972;font-size:12px&quot;&gt;Combines the three specialist reports&lt;/span&gt;" style="rounded=1;absoluteArcSize=1;arcSize=14;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fillColor=#ffffff;strokeColor=#8db0e2;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="325" y="226" width="250" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="report" value="&lt;b style=&quot;color:#245ba8;font-size:18px&quot;&gt;Final RCA report&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color:#435972;font-size:12px&quot;&gt;Validated structured output&lt;/span&gt;" style="rounded=1;absoluteArcSize=1;arcSize=14;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fillColor=#ffffff;strokeColor=#8db0e2;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="325" y="324" width="250" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="icon-1-langgraph" vertex="1" parent="1" style="shape=image;imageAspect=1;aspect=fixed;connectable=0;image=data:image/png,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAFBklEQVRoge2YW2xUVRSGv7XPtIVIIEBFwAg0knZKQW4GwZBohRhsCMQHvES5tNMQwBA6vUSMITEWEEOnFxJDwE5LCBoUH1AemmgFQmLKJZRb60wlGAG1CsUrgrU9Z/lQpullpjMDlKf5kknO7H+tvf+VObPX2QcSJEiQIEGCBAnuGok10P3GitEmOWWsLfYYo1iDYcYRbEuta4LT2lzh/y2WnAELcHvznleRZYIuARlz35zGxq/AFyJyIOCr/ipSUNgC0r2eOZbgU5g/qBZj55gjpvg734en+gr9bgV3Uf5qgc+AtAdmLzoTBc0dPW/2nzcaGk/0FHoV4PbmvQe8H64w4B/QLxFzBXgUcN0PZwInQZtAJkRYN4QReCF17uzktuONh3vkd5Hhzc8V0ZoIyR22I9MvVlYHAKYW5j7WiTkETL8n80pVoMJfAJDpzVuoIhHv9V556MpAec1eAAOQUZyfJqI7IyWo8m7IPEBTee1VMbwOdN5LAYrtD10HKmrqgcux5cmuzCLPxO4CxNHNQEqE6PMtFf7NfYcDZf4mNOIvFhNirBmh68yC1ePi2OmGOA6lAOIuWDUJY10KFROGI6pS5TL2xSF/J/1wevfuWyEhq2TVWNu2zgKP3IV/B7ipynYxcg3VDcCUePIt20ozallLBzAP8IyI7rfVNN8aZq/vKTRv3/OLOE6Owh/xuld0iwg7RChFdRfgwkh2HLelsV2dS40oOdECgSFdi/JyXzFQWdtoGWcRcDOGRW2E/UCZimuHKit6aOlqM0KEtaJUAVeizqaSY4BJMSwcYlrWunXD+g5+W1Z7QlRfBNoHShZhTdDnfzVY7i8R284AJvTScXICPn91oMJfQHvHLOD6gG6ENAOMi6MAlzO0fVY4IVBRU6+qK8JpIWysg6Hrlkr/N8Fyv4Q+wGVBjoT04Ad7bwANA7pRxsfdjFQ1GzgWTmupqPk0w+tZLMLycLrl2AuB/QBTinOfchxT10MeocJzIX3y+teGA09G8yPuQk8LkB5HDd9bw//KbH7nwH/hxCyvZ5QtXARGhVnuNjg1CD+7Oo2/09JzfXcwgQMgFxR9JequJLRYqfNmLgaZHEcBI532lOQbDWfqw4nXj5+5nTpv5lCQZ8PISSBzQBaooQ3kHNA3LgvIBh6OZkSUU0ZF6qIF9kuEN91F+Rsj6UnJKTuAW5F0una0UtASVLYCJQKX4vWhRuuMgYN3mkqc2VoaZlQALmzb+TvwUZQZkkTYEKyofjtY7i+zcLKBjjgcOFan63MT8PkvC3wcn3sAXJNLVj8e+vJE8fKH3IWe8+7CvFWAWMpGoGmgCdSxux+Nm8prrwI/xr687Guu2n3F3JloE/BvjJmtCIcQGoyj3X/UdidpATAVpNZd6NmCYw0TVe9ADU7E6m6M6UV584GJMZq/bdlmEz0fp91ez0qEPVFT4aQjst2oznDAZVTrHctcMrYzAzFTFV0DjI/NCKAcFSPXVHVJqONHT5HlLeXV++h7pHQXerYCb8W8eBd2126iYRvc/UaEzQGff1Poe68TUFvDma9Tn57dCiyKcjrqSbzd/G7pRLQg6KvZ1nOwn8m2hsbTo+fOrBMxGXE+Jw0eylGMvBT0+Q/2lQZ8rZLpzVuosAyRJcDYQTXZn1ZUD6llPmkpqz4cKSjmF1vTNq4dabd3jn8QL7aSteOns5V74j5jJEiQIEGCBAkSxMn/b1vBseB2gr4AAAAASUVORK5CYII=;">
+          <mxGeometry x="27" y="23" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="workflow-engine" value="LangGraph" style="text;html=0;verticalAlign=middle;spacing=0;fontFamily=Arial;align=left;fontSize=15;fontColor=#172941;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="64" y="29" width="180" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-snapshot-coordinator" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0;exitY=0.596774;entryX=0;entryY=0.451613;" edge="1" parent="1" source="snapshot" target="coordinator">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="18" y="59" />
+              <mxPoint x="18" y="254" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="original-context" value="Original context" style="text;html=0;align=center;verticalAlign=middle;spacing=0;fontFamily=Arial;fontSize=12;fontColor=#435972;" vertex="1" parent="1">
+          <mxGeometry x="91" y="232" width="132" height="18" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 900 408" width="900" height="408" role="img" aria-labelledby="title description">
+  <!-- LangGraph icon from Simple Icons (https://simpleicons.org/). -->
+  <title id="title">RCAnnon multi-agent workflow</title>
+  <desc id="description">One incident snapshot goes to three parallel specialists. Their reports and the incident context go to a coordinator, which produces a validated root cause analysis report.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#536b85" />
+    </marker>
+  </defs>
+  <rect width="900" height="408" rx="18" fill="#ffffff" />
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="1" y="1" width="898" height="406" rx="18" fill="#f1f6fc" stroke="#8fa9c7" stroke-width="1.5" />
+    <polyline points="368,84 368,102 160,102 160,122" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="450,84 450,122" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="532,84 532,102 740,102 740,122" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="160,184 160,205 368,205 368,226" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="450,184 450,226" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="740,184 740,205 532,205 532,226" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="450,288 450,324" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <g>
+      <rect x="325" y="22" width="250" height="62" rx="14" fill="#ffffff" stroke="#8db0e2" stroke-width="1.5" />
+      <text x="450" y="50" fill="#245ba8" font-size="18" font-weight="700" text-anchor="middle">Incident snapshot</text>
+      <text x="450" y="68" fill="#435972" font-size="12" text-anchor="middle">Sanitized Kubernetes evidence</text>
+    </g>
+    <g>
+      <rect x="35" y="122" width="250" height="62" rx="14" fill="#f4fbf8" stroke="#79b9ab" stroke-width="1.5" />
+      <text x="160" y="150" fill="#14675b" font-size="18" font-weight="700" text-anchor="middle">Configuration &amp; events</text>
+      <text x="160" y="168" fill="#435972" font-size="12" text-anchor="middle">Resources and events</text>
+    </g>
+    <g>
+      <rect x="325" y="122" width="250" height="62" rx="14" fill="#f4fbf8" stroke="#79b9ab" stroke-width="1.5" />
+      <text x="450" y="150" fill="#14675b" font-size="18" font-weight="700" text-anchor="middle">Logs &amp; connectivity</text>
+      <text x="450" y="168" fill="#435972" font-size="12" text-anchor="middle">Logs and checks</text>
+    </g>
+    <g>
+      <rect x="615" y="122" width="250" height="62" rx="14" fill="#f4fbf8" stroke="#79b9ab" stroke-width="1.5" />
+      <text x="740" y="150" fill="#14675b" font-size="18" font-weight="700" text-anchor="middle">Metrics &amp; telemetry</text>
+      <text x="740" y="168" fill="#435972" font-size="12" text-anchor="middle">Metrics, time window, resource limits</text>
+    </g>
+    <g>
+      <rect x="325" y="226" width="250" height="62" rx="14" fill="#ffffff" stroke="#8db0e2" stroke-width="1.5" />
+      <text x="450" y="254" fill="#245ba8" font-size="18" font-weight="700" text-anchor="middle">Coordinator</text>
+      <text x="450" y="272" fill="#435972" font-size="12" text-anchor="middle">Combines the three specialist reports</text>
+    </g>
+    <g>
+      <rect x="325" y="324" width="250" height="62" rx="14" fill="#ffffff" stroke="#8db0e2" stroke-width="1.5" />
+      <text x="450" y="352" fill="#245ba8" font-size="18" font-weight="700" text-anchor="middle">Final RCA report</text>
+      <text x="450" y="370" fill="#435972" font-size="12" text-anchor="middle">Validated structured output</text>
+    </g>
+    <image id="icon-1-langgraph" x="27" y="23" width="28" height="28" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAFBklEQVRoge2YW2xUVRSGv7XPtIVIIEBFwAg0knZKQW4GwZBohRhsCMQHvES5tNMQwBA6vUSMITEWEEOnFxJDwE5LCBoUH1AemmgFQmLKJZRb60wlGAG1CsUrgrU9Z/lQpullpjMDlKf5kknO7H+tvf+VObPX2QcSJEiQIEGCBAnuGok10P3GitEmOWWsLfYYo1iDYcYRbEuta4LT2lzh/y2WnAELcHvznleRZYIuARlz35zGxq/AFyJyIOCr/ipSUNgC0r2eOZbgU5g/qBZj55gjpvg734en+gr9bgV3Uf5qgc+AtAdmLzoTBc0dPW/2nzcaGk/0FHoV4PbmvQe8H64w4B/QLxFzBXgUcN0PZwInQZtAJkRYN4QReCF17uzktuONh3vkd5Hhzc8V0ZoIyR22I9MvVlYHAKYW5j7WiTkETL8n80pVoMJfAJDpzVuoIhHv9V556MpAec1eAAOQUZyfJqI7IyWo8m7IPEBTee1VMbwOdN5LAYrtD10HKmrqgcux5cmuzCLPxO4CxNHNQEqE6PMtFf7NfYcDZf4mNOIvFhNirBmh68yC1ePi2OmGOA6lAOIuWDUJY10KFROGI6pS5TL2xSF/J/1wevfuWyEhq2TVWNu2zgKP3IV/B7ipynYxcg3VDcCUePIt20ozallLBzAP8IyI7rfVNN8aZq/vKTRv3/OLOE6Owh/xuld0iwg7RChFdRfgwkh2HLelsV2dS40oOdECgSFdi/JyXzFQWdtoGWcRcDOGRW2E/UCZimuHKit6aOlqM0KEtaJUAVeizqaSY4BJMSwcYlrWunXD+g5+W1Z7QlRfBNoHShZhTdDnfzVY7i8R284AJvTScXICPn91oMJfQHvHLOD6gG6ENAOMi6MAlzO0fVY4IVBRU6+qK8JpIWysg6Hrlkr/N8Fyv4Q+wGVBjoT04Ad7bwANA7pRxsfdjFQ1GzgWTmupqPk0w+tZLMLycLrl2AuB/QBTinOfchxT10MeocJzIX3y+teGA09G8yPuQk8LkB5HDd9bw//KbH7nwH/hxCyvZ5QtXARGhVnuNjg1CD+7Oo2/09JzfXcwgQMgFxR9JequJLRYqfNmLgaZHEcBI532lOQbDWfqw4nXj5+5nTpv5lCQZ8PISSBzQBaooQ3kHNA3LgvIBh6OZkSUU0ZF6qIF9kuEN91F+Rsj6UnJKTuAW5F0una0UtASVLYCJQKX4vWhRuuMgYN3mkqc2VoaZlQALmzb+TvwUZQZkkTYEKyofjtY7i+zcLKBjjgcOFan63MT8PkvC3wcn3sAXJNLVj8e+vJE8fKH3IWe8+7CvFWAWMpGoGmgCdSxux+Nm8prrwI/xr687Guu2n3F3JloE/BvjJmtCIcQGoyj3X/UdidpATAVpNZd6NmCYw0TVe9ADU7E6m6M6UV584GJMZq/bdlmEz0fp91ez0qEPVFT4aQjst2oznDAZVTrHctcMrYzAzFTFV0DjI/NCKAcFSPXVHVJqONHT5HlLeXV++h7pHQXerYCb8W8eBd2126iYRvc/UaEzQGff1Poe68TUFvDma9Tn57dCiyKcjrqSbzd/G7pRLQg6KvZ1nOwn8m2hsbTo+fOrBMxGXE+Jw0eylGMvBT0+Q/2lQZ8rZLpzVuosAyRJcDYQTXZn1ZUD6llPmkpqz4cKSjmF1vTNq4dabd3jn8QL7aSteOns5V74j5jJEiQIEGCBAkSxMn/b1vBseB2gr4AAAAASUVORK5CYII=" />
+    <text x="64" y="42" font-size="15" fill="#172941" font-weight="700">LangGraph</text>
+    <polyline fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" points="325,59 18,59 18,254 325,254" />
+    <text x="157" y="245" fill="#435972" font-size="12" text-anchor="middle">Original context</text>
+  </g>
+</svg>

@@ -5,11 +5,11 @@
 **Out-of-Cluster AI Root Cause Analysis for Kubernetes**
 *Read-only. Blast-radius proof. Evidence-verified.*
 
-[![GHCR Release](https://img.shields.io/badge/GHCR-v0.1.3%20%7C%20latest-2496ED?style=flat-square&logo=docker&logoColor=white)](./docs/container-image.md)
-[![Python 3.12 + uv](https://img.shields.io/badge/Python-3.12%20%7C%20uv-3776AB?style=flat-square&logo=python&logoColor=white)](./pyproject.toml)
-[![LangGraph Workflows](https://img.shields.io/badge/LangGraph-base%20%C2%B7%20optimal%20%C2%B7%20mas-111827?style=flat-square)](./docs/architecture.md)
-[![UI LibreChat v0.8.9](https://img.shields.io/badge/UI-LibreChat%20v0.8.9%20(MIT)-0F766E?style=flat-square)](./infrastructure/compose/librechat.yaml)
-[![Kind Lab 16 Scenarios](https://img.shields.io/badge/Kind%20Lab-16%20K8s%20Incidents-7C3AED?style=flat-square&logo=kubernetes&logoColor=white)](./docs/scenarios.md)
+[![GHCR Container Image](https://img.shields.io/badge/GHCR-container%20image-2496ED?style=flat-square&logo=docker&logoColor=white)](./docs/container-image.md)
+[![Python and uv](https://img.shields.io/badge/Python-uv-3776AB?style=flat-square&logo=python&logoColor=white)](./pyproject.toml)
+[![LangGraph Workflows](https://img.shields.io/badge/LangGraph-RCA%20workflows-111827?style=flat-square)](./docs/architecture.md)
+[![LibreChat UI](https://img.shields.io/badge/UI-LibreChat%20(MIT)-0F766E?style=flat-square)](./infrastructure/compose/librechat.yaml)
+[![Kind Lab Kubernetes Scenarios](https://img.shields.io/badge/Kind%20Lab-Kubernetes%20scenarios-7C3AED?style=flat-square&logo=kubernetes&logoColor=white)](./docs/scenarios.md)
 [![License Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-16A34A?style=flat-square)](./LICENSE)
 
 [Why RCAnnon](#why-rcannon) · [How It Works](#how-it-works) · [Workflows](#three-workflows-one-snapshot) · [Documentation](#documentation) · [Security](#security) · [Contributing](#contributing)
@@ -31,26 +31,17 @@ When production pods crash-loop at 2 AM, in-cluster dashboards go dark, copy-pas
 | **Agents invent causes over missing telemetry** | Deterministic claim validation in `mas` cross-checks cited `Kind/name` objects, logs, and metrics against the snapshot; missing signals surface honestly as `qualified` or `insufficient_evidence`. |
 | **Single- vs. multi-agent comparisons drift** | Replays identical immutable `EvidenceSnapshot/v1` hashes across single-call and multi-agent strategies with deterministic mock and live OpenAI-compatible adapters. |
 
+> **So I Can't Run RCAnnon Inside a Kubernetes Cluster?**
+>
+> Yes. Run RCAnnon in a [separate management cluster](docs/container-image.md#in-a-separate-management-kubernetes-cluster) with read-only access to the target cluster. If RCAnnon runs in the target cluster, the same outage could take both down.
+
 ## How It Works
 
-```mermaid
-flowchart LR
-    subgraph Host["Management Plane — Compose Host or Separate K8s Cluster"]
-        U["Browser (LibreChat v0.8.9)"] -->|"Local login + /v1/chat/completions"| A["FastAPI OpenAI Facade"]
-        U <--> M[("MongoDB 8.0 (Auth & History)")]
-        A --> C["Read-Only Collector"]
-        C -->|"Sanitized + SHA-256"| S[("EvidenceSnapshot/v1 + SQLite")]
-        S -->|"base · optimal · mas"| G["LangGraph Workflows"]
-        A <-->|"Safe Markdown (SSE)"| U
-    end
-    subgraph Target["Target Cluster — Read-Only"]
-        C -->|"get / list (no Secrets, no exec)"| K["Kubernetes API"]
-        C -->|"Optional fixed read queries"| P["Prometheus / Telemetry"]
-    end
-    subgraph LLM["Inference Endpoint"]
-        G -->|"Shared Chat Completions adapter"| L["e-INFRA CZ / Mock LLM"]
-    end
-```
+Submit an incident through LibreChat or call FastAPI directly from a client with network access and the appropriate bearer token. RCAnnon analyzes Kubernetes evidence collected with read-only access and reports any gaps it detects.
+
+![LibreChat and operator clients call FastAPI. The RCAnnon Python service reads evidence from the target Kubernetes cluster and runs the selected workflow.](docs/diagrams/architecture.svg)
+
+To dive deeper into the architecture, see the [architecture guide](docs/architecture.md).
 
 ## Three Workflows, One Snapshot
 
@@ -88,13 +79,6 @@ Confirm `Pod/checkout-api-*` remains `Ready=True` with zero `OOMKilled` restarts
 When neither live cluster telemetry nor a registered bundle snapshot provides usable evidence, RCAnnon refuses to guess and returns `insufficient_evidence` listing the exact degraded or unreachable sources (`events`, `logs`, `metrics`, `checks`).
 
 </details>
-
-## "So I Can't Run RCAnnon Inside a Kubernetes Cluster?"
-
-**You absolutely can.** Docker Compose is our zero-friction reference setup, not a deployment limit—RCAnnon publishes standard multi-arch OCI container images (`ghcr.io/jkuzel02/rcannon` + LibreChat + MongoDB) that run anywhere containers run.
-
-- **Recommended — Standalone host (Compose) or a separate management Kubernetes cluster:** The architectural intent is simply to stay *outside the failing target cluster's blast radius*. Running RCAnnon inside another management or ops cluster works great—mount target read-only kubeconfigs and secrets into the API pod, and diagnose remote clusters normally.
-- **Not recommended — Inside the same target cluster you are diagnosing:** Nothing prevents deploying it there technically, but if CNI, CoreDNS, ingress, or etcd breaks in that cluster, RCAnnon goes down alongside the outage.
 
 ## Documentation
 

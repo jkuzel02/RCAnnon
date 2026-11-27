@@ -22,11 +22,31 @@ Downstream modules (`rca/evidence/`, `rca/api/`, Docker Compose packaging, Libre
 
 RCAnnon diagnoses Kubernetes incidents from an independent management host and compares three LangGraph approaches under controlled conditions.
 
-![RCAnnon request and evidence flow. LibreChat, FastAPI, storage, and workflows run in a management environment outside the target Kubernetes cluster.](architecture.svg)
+![LibreChat and operator clients call FastAPI. RCAnnon resolves Kubernetes evidence, runs the selected workflow, and stores the result in SQLite. A planned OTLP path feeds Tempo traces and Prometheus metrics to Grafana.](diagrams/architecture-runtime.svg)
 
-[Editable draw.io source](architecture.drawio)
+[Editable Draw.io source with overview and runtime pages](diagrams/architecture.drawio)
+
+The box marks the RCAnnon Python service and its SQLite store. LibreChat and MongoDB are separate services that can run alongside it on the same management host. Two-way arrows show request and response exchanges or shared reads and writes. The Kubernetes exchange uses read-only access.
+
+FastAPI listens on port `8000` and can run without LibreChat or MongoDB. Clients with network access can call the OpenAI-compatible routes using the UI bearer token or the snapshots and runs routes using the separate operator bearer token. The default Compose stack publishes only LibreChat to the host. The standalone container example shows how to publish the API on host loopback. [Compose configuration](../compose.yaml) · [Standalone API container](container-image.md#hardened-standalone-container-mock-mode)
 
 The collector uses a read-only kubeconfig with TLS to query the target Kubernetes API. The architecture also allows configured reads from external retained telemetry. See [Observability](#observability) for the OTLP export design.
+
+### How an Incident Request Runs
+
+1. **Authenticate and authorize.** The browser signs in to LibreChat. LibreChat owns the user account and chat history in MongoDB and forwards the request over the private `ui_api` network with its server-side bearer token. FastAPI maps the selected model to a workflow, parses the current `/rca` directive, and checks the target alias and namespaces against the server allowlist. Operator endpoints use a separate token and can register a snapshot bundle for later replay. [Compose services](../compose.yaml) · [API request handling](../rca/api/app.py)
+2. **Resolve the evidence.** A live request uses the collector bound to the selected target. It reads only authorized sources and records coverage per source, so an empty result can be distinguished from a denied, unavailable, or truncated source. If live collection fails, the collector can reuse a fresh cache entry for the same target scope. An explicit snapshot ID instead loads an unexpired snapshot from SQLite and rechecks its scope. [Collector](../rca/evidence/collectors.py) · [Run service](../rca/api/service.py)
+3. **Prepare the workflow input.** The service redacts live evidence before computing the canonical scope hash and persisting the snapshot. Registered bundles go through validation and redaction before storage. Each workflow receives a copy of the stored context. Reusing a snapshot ID across variants keeps the evidence fixed, and an optional incident description can change the working copy without changing the stored snapshot. [Snapshot contract](#evidencesnapshotv1) · [Run service](../rca/api/service.py)
+4. **Run diagnosis within a deadline.** If the snapshot has no usable evidence, the service records `insufficient_evidence` before making a model call. Otherwise the worker invokes `base` or `optimal` with one logical call, or `mas` with three specialist calls followed by the coordinator. The API enables MAS evidence validation against the snapshot, and the shared completion interface selects the mock provider or an OpenAI-compatible endpoint. [MAS workflow](../prompts/mas/README.md#1-multi-agent-architecture) · [Provider selection](../rca/api/server.py)
+5. **Persist and return the outcome.** FastAPI records a `running` entry in SQLite before the worker starts and then writes the terminal `RunResult/v1`. Degraded but usable evidence produces `qualified` with coverage limitations. A deadline or disconnect can terminate the run, and a restart marks stale running entries as interrupted. For chat, the facade renders the final result as sanitized Markdown, then returns it as JSON or OpenAI-compatible SSE. Operator clients receive the typed result. [Run storage](../rca/api/storage.py) · [Chat response handling](../rca/api/app.py)
+
+### Data Ownership and Retention
+
+| Store | Owns | Lifecycle |
+| --- | --- | --- |
+| MongoDB | LibreChat accounts and conversation history | Retained in the Compose `rcannon_mongo_data` volume. Chat history is presentation state. |
+| SQLite | Redacted snapshots and run records, including status, coverage, and usage | The Python app opens the file in `rcannon_api_data` through its standard-library `sqlite3` module. Snapshots expire, and both snapshots and runs have separate count limits. |
+| Collector cache | Usable evidence from recent live reads, keyed by target scope | In-process and bounded. A cached result retains its original observation time and is marked as degraded. |
 
 ### Management-Host Placement and Reachability
 
@@ -38,12 +58,17 @@ The collector uses a read-only kubeconfig with TLS to query the target Kubernete
 
 ### API Capability and Degradation Semantics
 
-| Target API Capability | Collection Behavior and Result Status |
+| Condition | What the caller sees |
 | --- | --- |
-| `Available` | Perform read-only scoped discovery and collect workload state, events, logs, metrics, and checks; return `diagnosed`. |
-| `Partial` | Continue authorized sources across per-resource denials or endpoint failures; return `qualified` with explicit `limitations`. |
-| `Unavailable` | Distinguish authentication, TLS, unreachable, and timeout failures; optionally fall back to a cached snapshot (`qualified`) or return `insufficient_evidence`. |
-| `No usable evidence` | Skip the model call and return `insufficient_evidence` with safe `limitations` and `result: null`. |
+| Scope denied or the requested snapshot has expired | The API rejects the request before starting a run. It returns HTTP `403` for a denied scope and `404` for a missing or expired snapshot. |
+| Usable evidence and successful workflow | The run ends as `diagnosed` with an RCA result. |
+| Usable evidence with degraded coverage or a cache fallback | The run ends as `qualified` with source limitations. Collection can continue across individual denials, endpoint failures, or truncation. |
+| No usable evidence | The run ends as `insufficient_evidence` with `result: null` and zero model calls. |
+| Provider failure or invalid model output | The run is stored as `failed` and the request returns HTTP `503`. An operator can inspect the stored run for the sanitized error code and any coverage data. |
+| Run deadline or provider timeout | The run is stored as `failed` and the request returns HTTP `504`. |
+| Client disconnect or restart with a stale running record | The store records the run as `interrupted`. A disconnect signals cancellation to the worker, which checks the signal before and after each model call. |
+
+The worker pool bounds active runs. The overall run deadline includes time waiting for a worker. The live model adapter also has its own deadline and per-attempt timeout. It defaults to zero retries and can retry eligible transient errors within its deadline when configured to do so. [Run service](../rca/api/service.py) · [Provider adapter](../rca/providers/openai.py) · [Provider configuration](../rca/providers/config.py)
 
 Control-plane reads can still surface rollout conditions, `FailedScheduling` and `FailedCreatePodSandBox` events, `EndpointSlice` state, PV/PVC conditions, and route status during data-plane outages. Log and aggregated metrics endpoints can fail independently of healthy API discovery. Evidence adapters must distinguish static DNS configuration and recorded checks from an active DNS probe, note that a reachability probe from the management host describes that host's path only, and preserve source origin and time windows.
 
@@ -55,7 +80,7 @@ Control-plane reads can still surface rollout conditions, `FailedScheduling` and
 | Collector | Official Kubernetes Python client (`ApiClient` per context) scoped to read-only cluster access. |
 | Provider | Shared OpenAI-compatible Chat Completions adapter (`langchain-openai` / `openai`) targeting OpenAI or any compatible endpoint. |
 | Frontend | LibreChat `v0.8.9` (MIT) selected over Open WebUI (licensing/operational tradeoffs) and Hugging Face Chat UI (deferred). All UIs integrate via the same OpenAI-compatible HTTP facade rather than native LangGraph execution. |
-| Telemetry | OpenTelemetry Python SDK, OpenTelemetry Collector, Tempo, Prometheus, and Grafana deployed outside the target cluster. Prefer manual graph-node spans over a second automated LangChain tracing pipeline to avoid duplicate or unsanitized telemetry. |
+| Telemetry | The planned export uses OpenTelemetry Collector, Tempo, Prometheus, and Grafana outside the target cluster. The current MAS workflow supports a callback for per-agent execution traces. |
 | Persistence | LibreChat owns MongoDB for user accounts and conversation history. Single-instance FastAPI runtime stores bounded redacted snapshot and run metadata in SQLite. |
 
 ## 4. Shared Compatibility Contracts (`v1`)
@@ -123,6 +148,8 @@ Statuses `unsupported`, `forbidden`, `unreachable`, `timeout`, `truncated`, and 
 
 For `mas`, each entry in `resource_limits` follows the tested list contract (`resource` as `Kind/name`, `namespace`, `container`, `requests`, `limits`), which takes precedence over legacy object shapes in prompt examples.
 
+The API enables strict MAS evidence checks for specialist reports and coordinator output. The validator checks resource references against the snapshot and flags affirmative claims about missing evidence sources. A rejected specialist report stops synthesis. A rejected coordinator report fails the run before the facade renders an RCA. [MAS evidence validation](../rca/workflows/mas_validation.py)
+
 - Unknown `variant` names raise `ValueError`.
 - Invalid JSON or schema validation failures raise `ValueError` in the workflow compatibility layer.
 - Provider exceptions (`ProviderAuthError`, `ProviderRateLimitError`, `ProviderTimeoutError`, `ProviderResponseError`, `TimeoutError`) propagate without silent swallowing.
@@ -160,9 +187,10 @@ For `mas`, each entry in `resource_limits` follows the tested list contract (`re
   - `POST /v1/chat/completions`: accepts a bounded text-only request referencing one explicit target alias and namespace (for example `/rca context=lab namespace=demo -- checkout is failing`) or a registered opaque `snapshot_id`. Conversation history is presentation-only; each authorized incident request starts a fresh graph run. Prior system/assistant override attempts, auto-title prompts, tools, attachments, and malformed requests are rejected or stripped without overriding server settings.
   - When `stream=true`, responses follow OpenAI Server-Sent Events (`text/event-stream`) framing, emit only finalized redacted Markdown chunks after schema validation succeeds, never fabricate intermediate model text on keepalive heartbeats, and terminate with a `finish_reason: "stop"` chunk followed by `[DONE]`. Client disconnect halts unstarted work, bounds in-flight completion, and records status `interrupted`.
 - **Operator Routes** (authenticated via a distinct operator bearer token):
-  - `POST /api/v1/snapshots`, `POST /api/v1/runs`, and `GET /api/v1/runs/{run_id}` enforce per-run deadlines, bounded worker concurrency, and bounded metadata retention.
+  - `POST /api/v1/snapshots` registers live evidence or a validated bundle. `GET /api/v1/snapshots/{snapshot_id}` returns the snapshot summary.
+  - `POST /api/v1/runs` runs a workflow against a target or snapshot ID. `GET /api/v1/runs` lists retained runs and `GET /api/v1/runs/{run_id}` returns a single typed result.
 - **Health Routes**:
-  - Dependency-light liveness and readiness endpoints report process health immediately and surface upstream target/provider capability outside the readiness gate.
+  - `GET /healthz` reports process liveness. `GET /readyz` checks the local run store. Target cluster and provider health surface through run outcomes.
 
 ## 5. Collector Scope and Safety
 
@@ -181,6 +209,8 @@ Live evidence adapters execute strictly scoped, read-only operations:
 ## 7. Observability and Evaluation
 
 ### Observability
+
+The current runtime records request and run identifiers, coverage, timings, and model usage in the API result. MAS can emit per-agent execution traces to a callback. The following requirements describe the planned OTLP export. [Run service](../rca/api/service.py) · [OpenTelemetry export issue](https://github.com/jkuzel02/RCAnnon/issues/15)
 
 - Send OTLP from the RCA service, collector, and workflows to an OpenTelemetry Collector outside the target cluster. Store traces in Tempo and metrics in Prometheus, and view both in Grafana.
 - Propagate `request_id`, `run_id`, and W3C trace context across HTTP request handling, evidence collection, graph nodes, MAS specialists, and provider attempts. Record correlation IDs in logs and trace spans only—never in Prometheus metric labels.
