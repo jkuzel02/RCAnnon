@@ -12,10 +12,10 @@
     <rect x="247" y="25" width="498" height="359" rx="18" fill="#f1f6fc" stroke="#8fa9c7" stroke-width="1.5" />
     <text x="296" y="53.76" fill="#245ba8" font-size="16" font-weight="700">RCAnnon Python service</text>
     <polyline points="184,115.5 459,115.5" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)" />
-    <polyline points="585.5,149 585.5,188" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="585.5,149 585.5,188" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)" />
     <polyline points="712,221.5 781,221.5" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)" />
     <polyline points="459,135 442,135 442,327.5 427,327.5" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)" />
-    <polyline points="585.5,255 585.5,294" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" />
+    <polyline points="585.5,255 585.5,294" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)" />
     <polyline points="712,327.5 781,327.5" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)" />
     <g>
       <rect x="24" y="82" width="160" height="67" rx="14" fill="#ffffff" stroke="#a9b9cb" stroke-width="1.5" />

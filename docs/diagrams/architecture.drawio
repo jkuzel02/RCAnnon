@@ -15,7 +15,7 @@
         <mxCell id="edge-1" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=1;exitY=0.5;entryX=0;entryY=0.5;startArrow=block;startFill=1;startSize=7;" edge="1" parent="1" source="chat-client" target="api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-4" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="api" target="collector">
+        <mxCell id="edge-4" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.5;entryY=0;startArrow=block;startFill=1;startSize=7;" edge="1" parent="1" source="api" target="collector">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="edge-5" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=1;exitY=0.5;entryX=0;entryY=0.5;startArrow=block;startFill=1;startSize=7;" edge="1" parent="1" source="collector" target="target">
@@ -29,7 +29,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-7" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="collector" target="workflow">
+        <mxCell id="edge-7" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=0.5;exitY=1;entryX=0.5;entryY=0;startArrow=block;startFill=1;startSize=7;" edge="1" parent="1" source="collector" target="workflow">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="edge-8" style="rounded=0;endArrow=block;endFill=1;endSize=7;strokeWidth=2;strokeColor=#536b85;exitX=1;exitY=0.5;entryX=0;entryY=0.5;dashed=1;dashPattern=4 3;startArrow=block;startFill=1;startSize=7;" edge="1" parent="1" source="workflow" target="provider">
