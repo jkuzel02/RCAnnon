@@ -1,43 +1,30 @@
 name: rcannon
 
-x-secrets-initializer: &secrets-initializer
-  image: python:3.12-slim-bookworm
-  user: "0:0"
-  read_only: true
-  cap_drop: [ALL]
-  cap_add: [CHOWN, FOWNER, DAC_OVERRIDE]
-  security_opt: [no-new-privileges:true]
-  init: true
-  restart: "no"
-  network_mode: none
-  entrypoint: [python, /app/scripts/init-compose-secrets.py]
-
 services:
   secrets-init:
-    <<: *secrets-initializer
+    image: python:3.12-slim-bookworm
     container_name: rcannon-secrets-init
-    command: [api]
+    user: "0:0"
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: "no"
+    network_mode: none
+    entrypoint:
+      - python
+      - /app/scripts/init-compose-secrets.py
+    command: []
     volumes:
       - ./infrastructure/compose/scripts/init-compose-secrets.py:/app/scripts/init-compose-secrets.py:ro
       - ./infrastructure/compose/secrets:/seed-secrets:ro
       - rcannon_api_secrets:/out/api
-
-  librechat-secrets:
-    <<: *secrets-initializer
-    profiles: [librechat]
-    container_name: rcannon-librechat-secrets
-    depends_on:
-      secrets-init:
-        condition: service_completed_successfully
-    command: [librechat]
-    environment:
-      LIBRECHAT_ADMIN_PASSWORD: ${LIBRECHAT_ADMIN_PASSWORD:-}
-    volumes:
-      - ./infrastructure/compose/scripts/init-compose-secrets.py:/app/scripts/init-compose-secrets.py:ro
-      - ./infrastructure/compose/secrets:/seed-secrets:ro
-      - rcannon_api_secrets:/out/api:ro
-      - rcannon_ui_secrets:/out/ui
-      - rcannon_bootstrap_secrets:/out/bootstrap
 
   rcannon:
     image: ghcr.io/jkuzel02/rcannon:latest
@@ -57,8 +44,9 @@ services:
     restart: unless-stopped
     tmpfs:
       - /tmp:size=32m,noexec,nosuid,nodev
+    ports:
+      - "127.0.0.1:${RCANNON_PORT:-8000}:8000"
     networks:
-      - ui_api
       - api_egress
       - telemetry_net
     volumes:
@@ -89,168 +77,7 @@ services:
       retries: 3
       start_period: 10s
 
-  mongodb:
-    profiles: [librechat]
-    image: mongo:8.0@sha256:479e85ced54ffb8a40dade1dcde2da2a9ae858515b9415e9cc54bfb8f0575d01
-    container_name: rcannon-mongodb
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
-    security_opt:
-      - no-new-privileges:true
-    init: true
-    restart: unless-stopped
-    networks:
-      - ui_db
-    volumes:
-      - rcannon_mongo_data:/data/db
-    healthcheck:
-      test:
-        - CMD
-        - mongosh
-        - --quiet
-        - mongodb://127.0.0.1:27017/admin
-        - --eval
-        - "db.adminCommand({ ping: 1 }).ok"
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-
-  librechat-bootstrap:
-    profiles: [librechat]
-    image: registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b
-    container_name: rcannon-librechat-bootstrap
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      librechat-secrets:
-        condition: service_completed_successfully
-    user: "1000:1000"
-    read_only: true
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    init: true
-    restart: "no"
-    tmpfs:
-      - /tmp:size=32m,noexec,nosuid,nodev
-      - /app/logs:size=16m,uid=1000,gid=1000,nosuid,nodev
-    networks:
-      - ui_db
-    volumes:
-      - ./infrastructure/compose/scripts/bootstrap-librechat-admin.sh:/app/scripts/bootstrap-librechat-admin.sh:ro
-      - rcannon_bootstrap_secrets:/run/rcannon-secrets:ro
-    entrypoint:
-      - /bin/sh
-      - /app/scripts/bootstrap-librechat-admin.sh
-    environment:
-      MONGO_URI: mongodb://mongodb:27017/LibreChat
-      LIBRECHAT_ADMIN_EMAIL: ${LIBRECHAT_ADMIN_EMAIL:-admin@rcannon.local}
-      LIBRECHAT_ADMIN_NAME: ${LIBRECHAT_ADMIN_NAME:-RCAnnon Admin}
-      LIBRECHAT_ADMIN_USERNAME: ${LIBRECHAT_ADMIN_USERNAME:-rcannon-admin}
-      LIBRECHAT_ADMIN_PASSWORD_FILE: /run/rcannon-secrets/librechat_admin_password
-      LIBRECHAT_JWT_SECRET_FILE: /run/rcannon-secrets/librechat_jwt_secret
-      LIBRECHAT_JWT_REFRESH_SECRET_FILE: /run/rcannon-secrets/librechat_jwt_refresh_secret
-      LIBRECHAT_CREDS_KEY_FILE: /run/rcannon-secrets/librechat_creds_key
-      LIBRECHAT_CREDS_IV_FILE: /run/rcannon-secrets/librechat_creds_iv
-      ALLOW_EMAIL_LOGIN: "true"
-      ALLOW_REGISTRATION: "false"
-
-  librechat:
-    profiles: [librechat]
-    image: registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b
-    container_name: rcannon-librechat
-    depends_on:
-      rcannon:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      librechat-secrets:
-        condition: service_completed_successfully
-      librechat-bootstrap:
-        condition: service_completed_successfully
-    user: "1000:1000"
-    read_only: true
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    init: true
-    stop_grace_period: 20s
-    restart: unless-stopped
-    entrypoint:
-      - /bin/sh
-      - /app/scripts/librechat-entrypoint.sh
-    command:
-      - npm
-      - run
-      - backend
-    tmpfs:
-      - /tmp:size=64m,noexec,nosuid,nodev
-      - /app/logs:size=32m,uid=1000,gid=1000,nosuid,nodev
-      - /app/data:size=16m,uid=1000,gid=1000,nosuid,nodev
-      - /app/uploads:size=16m,uid=1000,gid=1000,nosuid,nodev
-      - /app/client/public/images:size=16m,uid=1000,gid=1000,nosuid,nodev
-    ports:
-      - "127.0.0.1:${RCANNON_UI_PORT:-3080}:3080"
-    networks:
-      - ui_edge
-      - ui_api
-      - ui_db
-    volumes:
-      - ./infrastructure/compose/librechat.yaml:/app/librechat.yaml:ro
-      - ./infrastructure/compose/scripts/librechat-entrypoint.sh:/app/scripts/librechat-entrypoint.sh:ro
-      - rcannon_ui_secrets:/run/rcannon-secrets:ro
-    environment:
-      HOST: 0.0.0.0
-      PORT: "3080"
-      MONGO_URI: mongodb://mongodb:27017/LibreChat
-      CONFIG_PATH: /app/librechat.yaml
-      ENDPOINTS: custom
-      DOMAIN_CLIENT: http://127.0.0.1:${RCANNON_UI_PORT:-3080}
-      DOMAIN_SERVER: http://127.0.0.1:${RCANNON_UI_PORT:-3080}
-      RCANNON_UI_BEARER_TOKEN_FILE: /run/rcannon-secrets/rcannon_ui_bearer_token
-      LIBRECHAT_JWT_SECRET_FILE: /run/rcannon-secrets/librechat_jwt_secret
-      LIBRECHAT_JWT_REFRESH_SECRET_FILE: /run/rcannon-secrets/librechat_jwt_refresh_secret
-      LIBRECHAT_CREDS_KEY_FILE: /run/rcannon-secrets/librechat_creds_key
-      LIBRECHAT_CREDS_IV_FILE: /run/rcannon-secrets/librechat_creds_iv
-      ALLOW_EMAIL_LOGIN: "true"
-      ALLOW_REGISTRATION: "false"
-      ALLOW_SOCIAL_LOGIN: "false"
-      ALLOW_SOCIAL_REGISTRATION: "false"
-      ALLOW_PASSWORD_RESET: "false"
-      ALLOW_UNVERIFIED_EMAIL_LOGIN: "false"
-      SEARCH: "false"
-      NO_INDEX: "true"
-      TRUST_PROXY: "0"
-      DEBUG_LOGGING: "false"
-      CONSOLE_JSON: "false"
-    healthcheck:
-      test:
-        - CMD
-        - node
-        - -e
-        - "fetch('http://127.0.0.1:3080/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
 networks:
-  ui_edge:
-    driver: bridge
-  ui_api:
-    driver: bridge
-    internal: true
-  ui_db:
-    driver: bridge
-    internal: true
   api_egress:
     driver: bridge
   telemetry_net:
@@ -259,7 +86,4 @@ networks:
 
 volumes:
   rcannon_api_data:
-  rcannon_mongo_data:
   rcannon_api_secrets:
-  rcannon_ui_secrets:
-  rcannon_bootstrap_secrets:

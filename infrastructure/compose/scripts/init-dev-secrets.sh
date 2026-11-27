@@ -30,8 +30,3 @@ generate_secret_file() {
 
 generate_secret_file "${secrets_dir}/ui_bearer_token.secret" 32
 generate_secret_file "${secrets_dir}/operator_bearer_token.secret" 32
-generate_secret_file "${secrets_dir}/librechat_jwt_secret.secret" 32
-generate_secret_file "${secrets_dir}/librechat_jwt_refresh_secret.secret" 32
-generate_secret_file "${secrets_dir}/librechat_creds_key.secret" 32
-generate_secret_file "${secrets_dir}/librechat_creds_iv.secret" 16
-generate_secret_file "${secrets_dir}/librechat_admin_password.secret" 24

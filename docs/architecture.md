@@ -16,25 +16,25 @@ At ratification of `v1`, the repository already provides:
 - Sixteen Kubernetes incident scenarios in `scenarios/`, unchanged prompts in `prompts/`, and prompt smoke checks in `tests/prompt_checks/`.
 - Kind, Flux, Prometheus, and Grafana lab manifests in `infrastructure/`.
 
-Downstream modules (`rca/evidence/`, `rca/api/`, Docker Compose packaging, LibreChat integration, OpenTelemetry export, and the live benchmark harness) consume the contracts ratified here.
+Downstream modules (`rca/evidence/`, `rca/api/`, Docker Compose packaging, OpenTelemetry export, and the live benchmark harness) consume the contracts ratified here.
 
 ## 2. Architecture and Failure Domains
 
 RCAnnon diagnoses Kubernetes incidents from an independent management host and compares three LangGraph approaches under controlled conditions.
 
-![LibreChat and operator clients call FastAPI. RCAnnon resolves Kubernetes evidence, runs the selected workflow, and stores the result in SQLite. A planned OTLP path feeds Tempo traces and Prometheus metrics to Grafana.](diagrams/architecture-runtime.svg)
+![Chat and operator clients call FastAPI. RCAnnon resolves Kubernetes evidence, runs the selected workflow, and stores the result in SQLite. A planned OTLP path feeds Tempo traces and Prometheus metrics to Grafana.](diagrams/architecture-runtime.svg)
 
 [Editable Draw.io source with overview and runtime pages](diagrams/architecture.drawio)
 
-The box marks the RCAnnon Python service and its SQLite store. The optional `librechat` Compose profile adds the LibreChat example and its MongoDB store. Two-way arrows show request and response exchanges or shared reads and writes. The Kubernetes exchange uses read-only access.
+The box marks the RCAnnon Python service and its SQLite store. External chat clients, CI workflows, or a separate UI connect over the OpenAI-compatible `/v1/*` routes, while operators call `/api/v1/*`. Two-way arrows show request and response exchanges or shared reads and writes. The Kubernetes exchange uses read-only access.
 
-FastAPI listens on port `8000` and can run without LibreChat or MongoDB. Clients with network access can call the OpenAI-compatible routes using the UI bearer token or the snapshots and runs routes using the separate operator bearer token. The default Compose stack publishes only LibreChat to the host. The standalone container example shows how to publish the API on host loopback. [Compose configuration](../compose.yaml) · [Standalone API container](container-image.md#hardened-standalone-container-mock-mode)
+FastAPI listens on port `8000`. Clients with network access can call the OpenAI-compatible routes using the chat/UI bearer token or the snapshots and runs routes using the separate operator bearer token. The default Compose stack publishes `rcannon` on host loopback (`127.0.0.1:8000`). [Compose configuration](../compose.yaml) · [Standalone API container](container-image.md#hardened-standalone-container-mock-mode)
 
 The collector uses a read-only kubeconfig with TLS to query the target Kubernetes API. The architecture also allows configured reads from external retained telemetry. See [Observability](#observability) for the OTLP export design.
 
 ### How an Incident Request Runs
 
-1. **Authenticate and authorize.** The browser signs in to LibreChat. LibreChat owns the user account and chat history in MongoDB and forwards the request over the private `ui_api` network with its server-side bearer token. FastAPI maps the selected model to a workflow, parses the current `/rca` directive, and checks the target alias and namespaces against the server allowlist. Operator endpoints use a separate token and can register a snapshot bundle for later replay. [Compose services](../compose.yaml) · [API request handling](../rca/api/app.py)
+1. **Authenticate and authorize.** A chat client or external UI calls `/v1/chat/completions` with the chat bearer token, or an operator calls `/api/v1/*` with the separate operator bearer token. FastAPI maps the selected model to a workflow, parses the current `/rca` directive, and checks the target alias and namespaces against the server allowlist. Operator endpoints can also register a snapshot bundle for later replay. [Compose services](../compose.yaml) · [API request handling](../rca/api/app.py)
 2. **Resolve the evidence.** A live request uses the collector bound to the selected target. It reads only authorized sources and records coverage per source, so an empty result can be distinguished from a denied, unavailable, or truncated source. If live collection fails, the collector can reuse a fresh cache entry for the same target scope. An explicit snapshot ID instead loads an unexpired snapshot from SQLite and rechecks its scope. [Collector](../rca/evidence/collectors.py) · [Run service](../rca/api/service.py)
 3. **Prepare the workflow input.** The service redacts live evidence before computing the canonical scope hash and persisting the snapshot. Registered bundles go through validation and redaction before storage. Each workflow receives a copy of the stored context. Reusing a snapshot ID across variants keeps the evidence fixed, and an optional incident description can change the working copy without changing the stored snapshot. [Snapshot contract](#evidencesnapshotv1) · [Run service](../rca/api/service.py)
 4. **Run diagnosis within a deadline.** If the snapshot has no usable evidence, the service records `insufficient_evidence` before making a model call. Otherwise the worker invokes `base` or `optimal` with one logical call, or `mas` with three specialist calls followed by the coordinator. The API enables MAS evidence validation against the snapshot, and the shared completion interface selects the mock provider or an OpenAI-compatible endpoint. [MAS workflow](../prompts/mas/README.md#1-multi-agent-architecture) · [Provider selection](../rca/api/server.py)
@@ -44,7 +44,6 @@ The collector uses a read-only kubeconfig with TLS to query the target Kubernete
 
 | Store | Owns | Lifecycle |
 | --- | --- | --- |
-| MongoDB | LibreChat accounts and conversation history | Retained in the Compose `rcannon_mongo_data` volume. Chat history is presentation state. |
 | SQLite | Redacted snapshots and run records, including status, coverage, and usage | The Python app opens the file in `rcannon_api_data` through its standard-library `sqlite3` module. Snapshots expire, and both snapshots and runs have separate count limits. |
 | Collector cache | Usable evidence from recent live reads, keyed by target scope | In-process and bounded. A cached result retains its original observation time and is marked as degraded. |
 
@@ -79,9 +78,9 @@ Control-plane reads can still surface rollout conditions, `FailedScheduling` and
 | Runtime | Python `3.12` managed via `uv` and `.python-version`, matching CI. Use LangGraph `StateGraph` and FastAPI. |
 | Collector | Official Kubernetes Python client (`ApiClient` per context) scoped to read-only cluster access. |
 | Provider | Shared OpenAI-compatible Chat Completions adapter (`langchain-openai` / `openai`) targeting OpenAI or any compatible endpoint. |
-| Frontend | LibreChat `v0.8.9` (MIT) selected over Open WebUI (licensing/operational tradeoffs) and Hugging Face Chat UI (deferred). All UIs integrate via the same OpenAI-compatible HTTP facade rather than native LangGraph execution. |
+| API Facade | OpenAI-compatible HTTP endpoints (`/v1/models`, `/v1/chat/completions`) and operator endpoints (`/api/v1/*`) served by FastAPI so any external UI, CLI, or automation client can integrate cleanly. |
 | Telemetry | The planned export uses OpenTelemetry Collector, Tempo, Prometheus, and Grafana outside the target cluster. The current MAS workflow supports a callback for per-agent execution traces. |
-| Persistence | LibreChat owns MongoDB for user accounts and conversation history. Single-instance FastAPI runtime stores bounded redacted snapshot and run metadata in SQLite. |
+| Persistence | Single-instance FastAPI runtime stores bounded redacted snapshot and run metadata in SQLite. |
 
 ## 4. Shared Compatibility Contracts (`v1`)
 
@@ -199,12 +198,11 @@ Live evidence adapters execute strictly scoped, read-only operations:
 - **Allowed Reads:** `get` and `list` for workload objects (`Pod`, `Deployment`, `ReplicaSet`, `DaemonSet`, `StatefulSet`), workload conditions and container states, `Event` (with `v1`/`core` fallback and deduplication), `Service`, `EndpointSlice`, `NetworkPolicy`, CoreDNS deployments/services/endpoints and explicitly allowlisted configuration, `PVC`/`PV`/`StorageClass` plus scoped CSI deployment state, `Ingress` and discovered `Gateway`/`HTTPRoute`, permitted `Role`/`RoleBinding`/`ClusterRole`/`ClusterRoleBinding`, and optional cluster-scoped `Node` opt-in. Previous `Pod` container logs are bounded by byte and line caps per container.
 - **Prohibitions:** Never read `Secret` objects, collect logs from unrelated namespaces, invoke arbitrary Kubernetes API proxy paths, execute `pod exec` or node shells, or perform cluster mutations/remediation. Block kubeconfig `exec` and `auth-provider` plugins by default and never load ambient cloud credentials. Use CA-verified short-lived dedicated credentials with per-target throttles and deadlines. `SelfSubjectAccessReview` is permitted only as an optional, explicitly authorized diagnostic `POST`, never as a default verb.
 
-## 6. UI, Docker Compose, and Security Controls
+## 6. Docker Compose and Security Controls
 
-- **Network and Secret Isolation:** Separate the private UI-to-API Docker network from the private database network. The API container receives only read-only kubeconfig/CA mounts and provider/runtime secrets; LibreChat receives only its auth config and the UI service bearer token (never cluster or LLM credentials).
-- **Authentication and Bootstrap:** Gate public UI access on stock LibreChat local login with public registration disabled. Initialize the initial admin user on a fresh private database via an idempotent one-shot Compose profile passing non-empty secret-file or `stdin` input to the documented `create-user` CLI. Verify admin privilege, reject conflicting state, leave startup closed on bootstrap failure, and never pass passwords on command-line arguments or in logs.
-- **UI Hardening:** Disable secondary endpoint/agent editing, native tools, file uploads, web searches, and hidden auto-title LLM calls. Never trust browser-supplied user or role headers. Escape untrusted Markdown and block active HTML or tool invocation.
-- **Exposure and Ingestion:** Expose the UI on loopback only by default (use an independently hosted TLS reverse proxy for remote access) and keep API, MongoDB, OTLP, Prometheus, and Tempo ports unpublished by default. Pin container images by digest, run non-root where supported, mount secrets via runtime-owned Docker secrets, apply allowlist plus defensive regex redaction before model, storage, UI, and telemetry boundaries, and accept user-provided bundles only as bounded JSON validated against schema without archive expansion or file path dereferencing.
+- **Network and Secret Isolation:** Keep `rcannon` on `api_egress` and internal `telemetry_net`. The API container receives only read-only kubeconfig/CA mounts and provider/runtime secrets (`rcannon_ui_bearer_token`, `rcannon_operator_bearer_token`, and optional LLM key).
+- **Bearer Token Separation:** Enforce separate bearer tokens for chat/OpenAI-compatible routes (`/v1/*`) and operator snapshot/run routes (`/api/v1/*`), generated by a `network_mode: none` one-shot `secrets-init` container.
+- **Exposure and Ingestion:** Expose the API on loopback only (`127.0.0.1:8000`) by default (use an independently hosted TLS reverse proxy for remote access) and keep OTLP, Prometheus, and Tempo ports unpublished by default. Pin container images by digest where applicable, run non-root (`10001:10001`), mount secrets via runtime-owned Docker secrets, apply allowlist plus defensive regex redaction before model, storage, and telemetry boundaries, and accept user-provided bundles only as bounded JSON validated against schema without archive expansion or file path dereferencing.
 
 ## 7. Observability and Evaluation
 
@@ -221,7 +219,7 @@ The current runtime records request and run identifiers, coverage, timings, and 
 ### Verification Levels and Benchmark Protocol
 
 1. **Unit Contracts:** Schema validation, golden fixtures, deterministic workflow calls, and mocked provider/collector failures.
-2. **Service Integration:** FastAPI routes, graphs, collectors, LibreChat authentication/SSE framing, and serialized OTLP telemetry.
+2. **Service Integration:** FastAPI routes, graphs, collectors, SSE framing, and serialized OTLP telemetry.
 3. **Deterministic Replay:** Offline fixture and live-snapshot replay sharing an identical `scope_hash`.
 4. **Lab Scenario Lifecycle:** Sixteen Kind scenarios executed as `baseline -> inject -> capture -> analyze -> restore -> verify recovery`.
 5. **Disposable Resilience Drills:** CNI, CSI, ingress, unavailable metrics/API/provider, RBAC denials, partial/missing logs, runtime interruption, and malformed/oversized bundles, gated by explicit disposable cluster identity and pre/post cleanup checks. Fault injection stays strictly outside runtime code, and benchmark provider budgets remain separate from UI traffic.
@@ -246,7 +244,7 @@ Initial benchmark runs execute at least five repetitions per scenario and varian
 - **Phase 0 (`#5`):** Ratify architecture, trust boundaries, shared contracts, and synthetic golden fixtures (unblocks `#6`, `#7`, `#8`, `#9`, `#10`, and downstream integration issues).
 - **Phase 1:** Build the evidence collector (`#6`) and provider/workflow registry (`#7`) while API (`#12`) and Compose (`#13`) scaffold against stubs.
 - **Phase 2:** Implement `base`, `optimal`, and `mas` workflows (`#8`, `#9`, `#10`, `#11`) against mocks and start the scenario harness.
-- **Phase 3:** Integrate FastAPI, Docker Compose, and LibreChat (`#12`, `#13`, `#14`).
+- **Phase 3:** Integrate FastAPI and Docker Compose (`#12`, `#13`, `#14`).
 - **Phase 4:** Verify OpenTelemetry export and end-to-end smoke paths (`#15`).
 - **Phase 5:** Capture live incident evidence (`#16`), run disposable resilience drills, and execute repeated variant comparisons (`#17`).
 

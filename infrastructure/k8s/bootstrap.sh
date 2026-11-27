@@ -110,4 +110,3 @@ mv "$override_tmp" ../../compose.override.yaml
 
 printf 'Configured read-only Kind access in infrastructure/compose/kubeconfig/config and compose.override.yaml.\n'
 printf 'Start the RCAnnon API with: docker compose up -d\n'
-printf 'Include LibreChat with: docker compose --profile librechat up -d\n'
