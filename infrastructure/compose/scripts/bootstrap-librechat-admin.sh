@@ -13,10 +13,10 @@ fail_closed() {
 print_recovery_guidance() {
   cat >&2 <<'EOF'
 Interactive upstream user recovery commands (run with UI + MongoDB running):
-  docker compose exec -it ui npm run list-users
-  docker compose exec -it ui npm run reset-password
-  docker compose exec -it ui npm run delete-user
-  docker compose exec -it ui npm run create-user
+  docker compose exec -it librechat npm run list-users
+  docker compose exec -it librechat npm run reset-password
+  docker compose exec -it librechat npm run delete-user
+  docker compose exec -it librechat npm run create-user
 EOF
 }
 

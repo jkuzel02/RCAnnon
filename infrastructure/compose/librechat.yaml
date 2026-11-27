@@ -1,5 +1,5 @@
 # LibreChat v0.8.9 configuration for RCAnnon.
-# Mounted read-only into rcannon-ui at /app/librechat.yaml.
+# Mounted read-only into rcannon-librechat at /app/librechat.yaml.
 version: 1.3.19
 cache: true
 
@@ -51,7 +51,7 @@ fileConfig:
 
 endpoints:
   allowedAddresses:
-    - "api:8000"
+    - "rcannon:8000"
   all:
     titleConvo: false
     activityLabel: false
@@ -60,7 +60,7 @@ endpoints:
   custom:
     - name: "RCAnnon"
       apiKey: "${RCANNON_UI_BEARER_TOKEN}"
-      baseURL: "http://api:8000/v1"
+      baseURL: "http://rcannon:8000/v1"
       models:
         default:
           - "rcannon-base"

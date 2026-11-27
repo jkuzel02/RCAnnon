@@ -1,5 +1,36 @@
 # RCAnnon Container Image
 
+## Run the API with your own LibreChat
+
+The RCAnnon image contains the API, collector, and workflows. If you already
+run LibreChat, start the image on the same Docker network. RCAnnon uses its own
+SQLite database. Keep your existing LibreChat and MongoDB services.
+
+Set `LIBRECHAT_NETWORK` to the Docker network used by your LibreChat server,
+and set two distinct bearer tokens in your shell before running this command.
+Use the UI token in LibreChat and keep the operator token for managing snapshots
+and runs.
+
+```sh
+docker run -d --name rcannon --network "$LIBRECHAT_NETWORK" \
+  --mount type=volume,source=rcannon-api-data,target=/var/lib/rcannon \
+  -e RCANNON_DB_PATH=/var/lib/rcannon/rcannon.db \
+  -e RCANNON_UI_BEARER_TOKEN -e RCANNON_OPERATOR_BEARER_TOKEN \
+  -e RCANNON_PROVIDER_MODE=mock \
+  ghcr.io/jkuzel02/rcannon:latest
+```
+
+Copy the RCAnnon custom endpoint from [the working LibreChat configuration](../infrastructure/compose/librechat.yaml)
+into your `librechat.yaml`, including its `dropParams` list. Set `baseURL` to
+`http://rcannon:8000/v1`, allow `rcannon:8000` in `endpoints.allowedAddresses`,
+and set `RCANNON_UI_BEARER_TOKEN` to the same UI token in the LibreChat server's
+environment. Restart LibreChat to load the endpoint.
+
+This starts the service in mock mode. To analyze your own cluster, supply the
+provider key and read-only kubeconfig listed under
+[Environment and secret configuration](#environment-and-secret-configuration).
+To try a report with a bundled incident first, use the [browser demo](getting-started.md).
+
 Prebuilt multi-architecture OCI container images for RCAnnon are published to GitHub Container Registry (GHCR):
 
 - **Registry image:** `ghcr.io/jkuzel02/rcannon`
@@ -76,7 +107,7 @@ You are not limited to Docker Compose. The published `ghcr.io/jkuzel02/rcannon` 
 
 - Run the API pod with non-root security settings (`runAsUser: 10001`, `runAsGroup: 10001`, `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`, `capabilities: { drop: ["ALL"] }`) and a persistent volume mounted at `/var/lib/rcannon`.
 - Provide `RCANNON_UI_BEARER_TOKEN_FILE`, `RCANNON_OPERATOR_BEARER_TOKEN_FILE`, `OPENAI_API_KEY_FILE`, and read-only target cluster kubeconfigs (`RCANNON_KUBECONFIG_PATH`) via mounted Kubernetes `Secret` volumes (`readOnly: true`).
-- Deploy LibreChat (`v0.8.9`) and MongoDB (`8.0`) on cluster-internal Services in that management cluster, pointing `librechat.yaml` at the internal `api` Service URL (`http://<rcannon-api-service>:8000/v1`) and disabling self-registration.
+- Deploy LibreChat (`v0.8.9`) and MongoDB (`8.0`) on cluster-internal Services in that management cluster, pointing `librechat.yaml` at the internal RCAnnon Service URL (`http://<rcannon-api-service>:8000/v1`) and disabling self-registration.
 
 ## Supply-Chain Provenance Verification
 

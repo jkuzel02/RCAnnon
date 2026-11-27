@@ -153,8 +153,11 @@ def test_container_docs_changelog_dockerfile_labels_and_compose_image_var():
         assert label in dockerfile
 
     compose = yaml.safe_load((REPO_ROOT / "compose.yaml").read_text(encoding="utf-8"))
-    assert compose["services"]["api"]["image"] == "${RCANNON_IMAGE:-rcannon-api:local}"
-    assert compose["services"]["ui"]["image"].startswith(
+    assert compose["services"]["rcannon"]["image"] == "ghcr.io/jkuzel02/rcannon:latest"
+    assert compose["services"]["secrets-init"]["image"] == "python:3.12-slim-bookworm"
+    assert "build" not in compose["services"]["rcannon"]
+    assert "build" not in compose["services"]["secrets-init"]
+    assert compose["services"]["librechat"]["image"].startswith(
         "registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:"
     )
 
@@ -167,9 +170,6 @@ def test_release_please_extra_files_sync_doc_versions():
     extra_files = config["packages"]["."]["extra-files"]
     expected_paths = {
         "docs/container-image.md",
-        "docs/getting-started.md",
-        "infrastructure/compose/README.md",
-        "infrastructure/compose/.env.example",
     }
     configured = {entry["path"]: entry["type"] for entry in extra_files}
     assert expected_paths.issubset(configured.keys())

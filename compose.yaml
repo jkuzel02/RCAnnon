@@ -1,44 +1,48 @@
 name: rcannon
 
+x-secrets-initializer: &secrets-initializer
+  image: python:3.12-slim-bookworm
+  user: "0:0"
+  read_only: true
+  cap_drop: [ALL]
+  cap_add: [CHOWN, FOWNER, DAC_OVERRIDE]
+  security_opt: [no-new-privileges:true]
+  init: true
+  restart: "no"
+  network_mode: none
+  entrypoint: [python, /app/scripts/init-compose-secrets.py]
+
 services:
   secrets-init:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: ${RCANNON_IMAGE:-rcannon-api:local}
+    <<: *secrets-initializer
     container_name: rcannon-secrets-init
-    user: "0:0"
-    read_only: true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - FOWNER
-      - DAC_OVERRIDE
-    security_opt:
-      - no-new-privileges:true
-    init: true
-    restart: "no"
-    network_mode: none
-    entrypoint:
-      - python
-      - /app/scripts/init-compose-secrets.py
-    command: []
+    command: [api]
+    volumes:
+      - ./infrastructure/compose/scripts/init-compose-secrets.py:/app/scripts/init-compose-secrets.py:ro
+      - ./infrastructure/compose/secrets:/seed-secrets:ro
+      - rcannon_api_secrets:/out/api
+
+  librechat-secrets:
+    <<: *secrets-initializer
+    profiles: [librechat]
+    container_name: rcannon-librechat-secrets
+    depends_on:
+      secrets-init:
+        condition: service_completed_successfully
+    command: [librechat]
     environment:
       LIBRECHAT_ADMIN_PASSWORD: ${LIBRECHAT_ADMIN_PASSWORD:-}
     volumes:
       - ./infrastructure/compose/scripts/init-compose-secrets.py:/app/scripts/init-compose-secrets.py:ro
       - ./infrastructure/compose/secrets:/seed-secrets:ro
-      - rcannon_api_secrets:/out/api
+      - rcannon_api_secrets:/out/api:ro
       - rcannon_ui_secrets:/out/ui
       - rcannon_bootstrap_secrets:/out/bootstrap
 
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: ${RCANNON_IMAGE:-rcannon-api:local}
-    container_name: rcannon-api
+  rcannon:
+    image: ghcr.io/jkuzel02/rcannon:latest
+    pull_policy: always
+    container_name: rcannon
     depends_on:
       secrets-init:
         condition: service_completed_successfully
@@ -86,6 +90,7 @@ services:
       start_period: 10s
 
   mongodb:
+    profiles: [librechat]
     image: mongo:8.0@sha256:479e85ced54ffb8a40dade1dcde2da2a9ae858515b9415e9cc54bfb8f0575d01
     container_name: rcannon-mongodb
     cap_drop:
@@ -116,13 +121,14 @@ services:
       retries: 5
       start_period: 15s
 
-  ui-bootstrap:
+  librechat-bootstrap:
+    profiles: [librechat]
     image: registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b
-    container_name: rcannon-ui-bootstrap
+    container_name: rcannon-librechat-bootstrap
     depends_on:
       mongodb:
         condition: service_healthy
-      secrets-init:
+      librechat-secrets:
         condition: service_completed_successfully
     user: "1000:1000"
     read_only: true
@@ -156,17 +162,18 @@ services:
       ALLOW_EMAIL_LOGIN: "true"
       ALLOW_REGISTRATION: "false"
 
-  ui:
+  librechat:
+    profiles: [librechat]
     image: registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b
-    container_name: rcannon-ui
+    container_name: rcannon-librechat
     depends_on:
-      api:
+      rcannon:
         condition: service_healthy
       mongodb:
         condition: service_healthy
-      secrets-init:
+      librechat-secrets:
         condition: service_completed_successfully
-      ui-bootstrap:
+      librechat-bootstrap:
         condition: service_completed_successfully
     user: "1000:1000"
     read_only: true

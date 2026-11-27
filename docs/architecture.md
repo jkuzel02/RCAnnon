@@ -26,7 +26,7 @@ RCAnnon diagnoses Kubernetes incidents from an independent management host and c
 
 [Editable Draw.io source with overview and runtime pages](diagrams/architecture.drawio)
 
-The box marks the RCAnnon Python service and its SQLite store. LibreChat and MongoDB are separate services that can run alongside it on the same management host. Two-way arrows show request and response exchanges or shared reads and writes. The Kubernetes exchange uses read-only access.
+The box marks the RCAnnon Python service and its SQLite store. The optional `librechat` Compose profile adds the LibreChat example and its MongoDB store. Two-way arrows show request and response exchanges or shared reads and writes. The Kubernetes exchange uses read-only access.
 
 FastAPI listens on port `8000` and can run without LibreChat or MongoDB. Clients with network access can call the OpenAI-compatible routes using the UI bearer token or the snapshots and runs routes using the separate operator bearer token. The default Compose stack publishes only LibreChat to the host. The standalone container example shows how to publish the API on host loopback. [Compose configuration](../compose.yaml) · [Standalone API container](container-image.md#hardened-standalone-container-mock-mode)
 

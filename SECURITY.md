@@ -36,7 +36,7 @@ gh attestation verify oci://ghcr.io/jkuzel02/rcannon:latest --owner jkuzel02
 ```
 
 - **Strict Network & Secret Boundaries:** LibreChat (`v0.8.9`, `UID=1000`, `read_only: true`, `cap_drop: [ALL]`, public registration and social login disabled, native tools/uploads/web-search turned off) binds only `127.0.0.1:3080` by default and holds zero cluster kubeconfigs, LLM API keys, or operator tokens. MongoDB (`8.0`) sits exclusively on an internal `ui_db` Docker network with zero published host ports.
-- **Idempotent `stdin` Admin Bootstrap:** Initial administrator creation runs through an opt-in one-shot `--profile bootstrap` container piping the secret password solely over `stdin` to LibreChat's stock `npm run create-user` CLI—never via CLI arguments, stdout, logs, or `.env`—and fails closed on conflicting database state or weak credentials.
+- **Idempotent `stdin` Admin Bootstrap:** In the optional `librechat` profile, the bootstrap container passes the initial administrator password over `stdin` to LibreChat's `npm run create-user` CLI. The bootstrap fails closed on conflicting database state or weak credentials.
 - **Target Cluster Guardrails & Redaction:** `TargetSelector` enforces cluster-alias and namespace allowlists, restricts Kubernetes API access to read-only `get`/`list` verbs (never `Secret` values, `pod exec`, or mutations), rejects kubeconfigs containing `exec` plugins, `auth-provider` blocks, or `insecure-skip-tls-verify: true`, and scrubs credentials before storage, inference, and SSE rendering.
 
 For deeper contract details, see [docs/architecture.md](./docs/architecture.md), [docs/container-image.md](./docs/container-image.md), and [infrastructure/compose/secrets/README.md](./infrastructure/compose/secrets/README.md).

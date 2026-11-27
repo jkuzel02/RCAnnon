@@ -1,5 +1,5 @@
 services:
-  api:
+  rcannon:
     secrets:
       - rcannon_llm_api_key
     environment:
