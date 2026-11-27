@@ -33,7 +33,7 @@ Release versions use SemVer tags (`X.Y.Z`, starting with `0.1.0`) that match `[p
 
 | Tag | Source | Intended Use |
 | --- | --- | --- |
-| `0.2.0` (exact `X.Y.Z`) | Tagged release | Pinned reproducible release deployment | <!-- x-release-please-version -->
+| `0.3.0` (exact `X.Y.Z`) | Tagged release | Pinned reproducible release deployment | <!-- x-release-please-version -->
 | `0.1` (`X.Y`) | Tagged release | Minor-line tracking |
 | `latest` | Latest stable SemVer release | Tracking the current stable release (never overwritten by `main` pushes) |
 | `main` | `main` branch push | Rolling development build |
@@ -105,7 +105,7 @@ Published GHCR releases include SBOMs and SLSA build provenance attestations gen
 
 <!-- x-release-please-start-version -->
 ```sh
-gh attestation verify oci://ghcr.io/jkuzel02/rcannon:0.2.0 --owner jkuzel02
+gh attestation verify oci://ghcr.io/jkuzel02/rcannon:0.3.0 --owner jkuzel02
 ```
 <!-- x-release-please-end -->
 
