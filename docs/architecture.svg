@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 520" width="1060" height="520" role="img" aria-labelledby="title description">
+  <title id="title">RCAnnon architecture</title>
+  <desc id="description">A browser sends an incident request through LibreChat and FastAPI on an independent management host. The evidence collector reads the target Kubernetes API and provides redacted evidence to LangGraph. The workflow can call a model provider. MongoDB stores chat history and SQLite stores snapshots and runs.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#536b85"/>
+    </marker>
+  </defs>
+  <rect width="1060" height="520" rx="18" fill="#ffffff"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="205" y="91" width="581" height="402" rx="18" fill="#f1f6fc" stroke="#8fa9c7" stroke-width="1.5"/>
+    <text x="28" y="43.42" fill="#172941" font-size="27" font-weight="700">RCAnnon architecture</text>
+    <text x="28" y="72.28" fill="#435972" font-size="15">An independent service collects Kubernetes evidence and returns an incident report.</text>
+    <text x="227" y="118.75999999999999" fill="#245ba8" font-size="16" font-weight="700">Management environment</text>
+    <polyline points="170,177 230,177" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+    <polyline points="437,177 530,177" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+    <polyline points="333.5,215 333.5,262" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+    <polyline points="642,215 642,262" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+    <polyline points="754,300 841,300" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+    <polyline points="530,197 483.5,197 483.5,423 437,423" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+    <polyline points="642,338 642,385" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+    <polyline points="754,423 841,423" fill="none" stroke="#536b85" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="5 4"/>
+    <g>
+      <rect x="28" y="139" width="142" height="76" rx="14" fill="#ffffff" stroke="#a9b9cb" stroke-width="1.5"/>
+      <text x="99" y="171" fill="#172941" font-size="18" font-weight="700" text-anchor="middle">Operator</text>
+      <text x="99" y="192" fill="#435972" font-size="12" text-anchor="middle">Browser · /rca</text>
+    </g>
+    <g>
+      <rect x="230" y="139" width="207" height="76" rx="14" fill="#ffffff" stroke="#8db0e2" stroke-width="1.5"/>
+      <text x="333.5" y="171" fill="#245ba8" font-size="18" font-weight="700" text-anchor="middle">LibreChat</text>
+      <text x="333.5" y="192" fill="#435972" font-size="12" text-anchor="middle">Login and chat</text>
+    </g>
+    <g>
+      <rect x="530" y="139" width="224" height="76" rx="14" fill="#ffffff" stroke="#8db0e2" stroke-width="1.5"/>
+      <text x="642" y="171" fill="#245ba8" font-size="18" font-weight="700" text-anchor="middle">FastAPI</text>
+      <text x="642" y="192" fill="#435972" font-size="12" text-anchor="middle">Validates requests · returns reports</text>
+    </g>
+    <g>
+      <rect x="230" y="262" width="207" height="76" rx="14" fill="#ffffff" stroke="#a9b9cb" stroke-width="1.5"/>
+      <text x="333.5" y="294" fill="#172941" font-size="18" font-weight="700" text-anchor="middle">MongoDB</text>
+      <text x="333.5" y="315" fill="#435972" font-size="12" text-anchor="middle">Accounts and chat history</text>
+    </g>
+    <g>
+      <rect x="530" y="262" width="224" height="76" rx="14" fill="#f4fbf8" stroke="#79b9ab" stroke-width="1.5"/>
+      <text x="642" y="294" fill="#14675b" font-size="18" font-weight="700" text-anchor="middle">Evidence collector</text>
+      <text x="642" y="315" fill="#435972" font-size="12" text-anchor="middle">Scoped reads and redaction</text>
+    </g>
+    <g>
+      <rect x="841" y="262" width="191" height="76" rx="14" fill="#f4fbf8" stroke="#79b9ab" stroke-width="1.5"/>
+      <text x="936.5" y="294" fill="#14675b" font-size="18" font-weight="700" text-anchor="middle">Kubernetes API</text>
+      <text x="936.5" y="315" fill="#435972" font-size="12" text-anchor="middle">Target cluster</text>
+    </g>
+    <g>
+      <rect x="230" y="385" width="207" height="76" rx="14" fill="#ffffff" stroke="#a9b9cb" stroke-width="1.5"/>
+      <text x="333.5" y="417" fill="#172941" font-size="18" font-weight="700" text-anchor="middle">SQLite</text>
+      <text x="333.5" y="438" fill="#435972" font-size="12" text-anchor="middle">Snapshots and run metadata</text>
+    </g>
+    <g>
+      <rect x="530" y="385" width="224" height="76" rx="14" fill="#ffffff" stroke="#8db0e2" stroke-width="1.5"/>
+      <text x="642" y="417" fill="#245ba8" font-size="18" font-weight="700" text-anchor="middle">LangGraph workflows</text>
+      <text x="642" y="438" fill="#435972" font-size="12" text-anchor="middle">base · optimal · mas</text>
+    </g>
+    <g>
+      <rect x="841" y="385" width="191" height="76" rx="14" fill="#fff9f1" stroke="#d5a576" stroke-width="1.5"/>
+      <text x="936.5" y="417" fill="#874915" font-size="18" font-weight="700" text-anchor="middle">Model provider</text>
+      <text x="936.5" y="438" fill="#435972" font-size="12" text-anchor="middle">OpenAI-compatible API</text>
+    </g>
+    <text x="483.5" y="168" fill="#435972" font-size="11" text-anchor="middle">Chat API</text>
+    <text x="797.5" y="289" fill="#435972" font-size="11" text-anchor="middle">Read-only</text>
+    <text x="707" y="365" fill="#435972" font-size="11" text-anchor="middle">Redacted evidence</text>
+    <text x="797.5" y="412" fill="#435972" font-size="11" text-anchor="middle">Optional</text>
+  </g>
+</svg>
