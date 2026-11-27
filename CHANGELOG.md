@@ -4,6 +4,17 @@ All notable changes to RCAnnon are documented in this file.
 
 Entries are generated automatically from [Conventional Commits](https://www.conventionalcommits.org/) via Release Please when versioned Release PRs are merged into `main`. Version tags (`X.Y.Z`) strictly match `[project].version` in `pyproject.toml`.
 
+## [0.2.0](https://github.com/jkuzel02/RCAnnon/compare/0.1.8...0.2.0) (2026-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* Existing Compose deployments must migrate the renamed RCAnnon and LibreChat services and regenerate any Kind override that targets the old API service name.
+
+### Bug Fixes
+
+* mark the Compose deployment change as breaking ([e83c78c](https://github.com/jkuzel02/RCAnnon/commit/e83c78c8287d06887f6e51bba9dd486f032abb5d)), closes [#80](https://github.com/jkuzel02/RCAnnon/issues/80)
+
 ## [0.1.8](https://github.com/jkuzel02/RCAnnon/compare/0.1.7...0.1.8) (2026-11-27)
 
 
