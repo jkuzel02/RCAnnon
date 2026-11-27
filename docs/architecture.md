@@ -13,7 +13,7 @@ At ratification of `v1`, the repository already provides:
 - Canonical JSON schemas, prompt allowlists, and typed provider error contracts in `rca/contracts/`.
 - The shared Chat Completions provider configuration and adapter in `rca/providers/`.
 - All three compiled LangGraph workflows (`base`, `optimal`, `mas`) behind `rca.workflows.build_workflow` in `rca/workflows/`.
-- Sixteen Kubernetes incident scenarios in `scenarios/`, unchanged prompts in `prompts/`, and prompt smoke checks in `evaluation/prompt_checks/`.
+- Sixteen Kubernetes incident scenarios in `scenarios/`, unchanged prompts in `prompts/`, and prompt smoke checks in `tests/prompt_checks/`.
 - Kind, Flux, Prometheus, and Grafana lab manifests in `infrastructure/`.
 
 Downstream modules (`rca/evidence/`, `rca/api/`, Docker Compose packaging, LibreChat integration, OpenTelemetry export, and the live benchmark harness) consume the contracts ratified here.

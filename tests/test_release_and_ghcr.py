@@ -222,8 +222,6 @@ def test_release_please_triggers_only_on_release_worthy_paths_and_commits():
         "!prompts/**/README.md",
         "scenarios/**",
         "!scenarios/**/README.md",
-        "evaluation/**",
-        "!evaluation/**/*.md",
         ".release-please-manifest.json",
         "CHANGELOG.md",
     ):
