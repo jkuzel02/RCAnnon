@@ -22,27 +22,11 @@ Downstream modules (`rca/evidence/`, `rca/api/`, Docker Compose packaging, Libre
 
 RCAnnon diagnoses Kubernetes incidents from an independent management host and compares three LangGraph approaches under controlled conditions.
 
-```mermaid
-flowchart LR
-    B["Browser"] -->|Local login over HTTPS or loopback| U["LibreChat server"]
-    U -->|Server bearer and OpenAI-compatible requests| A["FastAPI and RCA service"]
-    U --> M[("MongoDB conversation history")]
-    A --> C["Read-only evidence adapters"]
-    C -->|Read-only mounted kubeconfig and TLS| K["Target Kubernetes API"]
-    C -->|Optional configured read endpoint| X["External retained telemetry"]
-    A --> S[("Bounded redacted snapshots and run metadata")]
-    C --> S
-    S --> G["LangGraph base, optimal, MAS"]
-    G -->|Shared Chat Completions adapter| L["OpenAI-compatible API"]
-    G --> A
-    A -. OTLP .-> O["OpenTelemetry Collector"]
-    G -. OTLP .-> O
-    C -. OTLP .-> O
-    O --> T["Tempo traces"]
-    O --> P["Prometheus metrics"]
-    T --> F["Grafana outside target"]
-    P --> F
-```
+![RCAnnon request and evidence flow. LibreChat, FastAPI, storage, and workflows run in a management environment outside the target Kubernetes cluster.](architecture.svg)
+
+[Editable draw.io source](architecture.drawio)
+
+The collector uses a read-only kubeconfig with TLS to query the target Kubernetes API. The architecture also allows configured reads from external retained telemetry. See [Observability](#observability) for the OTLP export design.
 
 ### Management-Host Placement and Reachability
 
@@ -198,6 +182,7 @@ Live evidence adapters execute strictly scoped, read-only operations:
 
 ### Observability
 
+- Send OTLP from the RCA service, collector, and workflows to an OpenTelemetry Collector outside the target cluster. Store traces in Tempo and metrics in Prometheus, and view both in Grafana.
 - Propagate `request_id`, `run_id`, and W3C trace context across HTTP request handling, evidence collection, graph nodes, MAS specialists, and provider attempts. Record correlation IDs in logs and trace spans only—never in Prometheus metric labels.
 - Emit bounded enum metric labels and payload-free structured logs.
 - Align telemetry with OpenTelemetry HTTP semantic conventions and versioned GenAI metrics (`gen_ai.client.operation.duration`, `gen_ai.client.token.usage`).
