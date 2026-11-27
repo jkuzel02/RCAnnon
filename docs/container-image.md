@@ -50,13 +50,7 @@ Prefer Docker secret files (`*_FILE`) mounted under `/run/secrets/` rather than 
 
 ### With Docker Compose
 
-Set `RCANNON_IMAGE` and start without building locally (secret initialization and admin bootstrap run automatically):
-
-```sh
-RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:latest docker compose up -d --no-build --wait
-```
-
-See [infrastructure/compose/README.md](../infrastructure/compose/README.md) for live OpenAI-compatible API and read-only kubeconfig overlays.
+Follow [Getting Started](getting-started.md#try-the-web-app) to run the published image with the browser UI. For live inference and target cluster configuration, see [Compose operations](../infrastructure/compose/README.md).
 
 ### Hardened Standalone Container (`mock` mode)
 

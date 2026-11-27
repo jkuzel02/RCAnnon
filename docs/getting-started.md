@@ -1,89 +1,48 @@
 # Getting Started with RCAnnon
 
-Two commands get you from a fresh clone to a running Kubernetes lab and the RCAnnon web UI.
+Try RCAnnon in your browser with Docker Compose. You can start without Kubernetes or an API key.
 
-> **Using your own cluster?** Skip Step 1 and point RCAnnon at a read-only kubeconfig later with [Compose Operations](../infrastructure/compose/README.md).
+## Try the web app
 
-## 1. Spin Up a Local Kubernetes Cluster (Optional)
+From a fresh clone with Docker running, start the published image in mock mode.
 
-Need a cluster to inspect right away? Provision the built-in disposable **Kind + Flux + Prometheus + Grafana** lab (one easy way to get started; requires `docker`, `kind`, `kubectl`, and `helm`—see [OS setup](../infrastructure/k8s/README.md)):
+<!-- x-release-please-start-version -->
+```sh
+git clone https://github.com/jkuzel02/RCAnnon.git
+cd RCAnnon
+export RCANNON_IMAGE=ghcr.io/jkuzel02/rcannon:0.1.6
+export RCANNON_PROVIDER_MODE=mock
+docker compose -f compose.yaml up -d --no-build --wait
+```
+<!-- x-release-please-end -->
+
+Open [RCAnnon](http://127.0.0.1:3080) and sign in with email `admin@rcannon.local` and password `rcannon-local-admin`. Select `rcannon-optimal` and send this request.
+
+```text
+/rca context=lab namespace=demo -- Review the foo-app workload
+```
+
+**Insufficient Evidence** confirms the request reached RCAnnon. Connect the lab below to see a report with Kubernetes data.
+
+To stop here and keep your chat history, run `docker compose -f compose.yaml down`.
+
+## Try a report with Kubernetes data
+
+Install `kind`, `kubectl`, and `helm` using the [local lab guide](../infrastructure/k8s/README.md). From the same terminal, run these commands.
 
 ```sh
 bash infrastructure/k8s/bootstrap.sh
+docker compose up -d --no-build --wait
+kubectl --context kind-local -n demo get pods
 ```
 
-This also applies read-only RBAC and auto-generates `infrastructure/compose/kubeconfig/config` + `compose.override.yaml` so `docker compose up -d` connects straight to `kind-local` without manual kubeconfig edits.
+The bootstrap script connects RCAnnon to the lab with read-only access. Once the `foo-app` pods appear, resend the request in the web app. RCAnnon collects real lab evidence and returns a sample report using mock inference.
 
-## 2. Configure & Start RCAnnon
+When finished, run `docker compose down` and follow the [lab cleanup steps](../infrastructure/k8s/README.md#clean-up).
 
-Copy `.env.example` to `.env`, paste your `OPENAI_API_KEY` (or leave it empty to try offline mock mode), and start Docker Compose:
+## Use your own setup
 
-```sh
-cp .env.example .env
-docker compose up -d
-```
-
-Open **`http://127.0.0.1:3080`**:
-- **Email:** `admin@rcannon.local`
-- **Password:** `rcannon-local-admin` (or whatever you set in `.env`)
-- Pick a model (`rcannon-base`, `rcannon-optimal`, or `rcannon-mas`) and submit an `/rca` prompt:
-
-```text
-/rca context=lab namespace=demo -- foo-app is failing
-```
-
-> `docker compose up -d` generates isolated per-service tokens and seeds the local UI account automatically—no extra setup scripts or manual bootstrap steps needed.
-
----
-
-## What You Just Spun Up
-
-### In Kubernetes (`kind-local`)
-
-If you ran `bootstrap.sh`, Flux CD reconciles the following into your local `kind-local` cluster:
-
-| Component | Purpose | Access / Check |
-| --- | --- | --- |
-| **Demo apps (`demo` namespace)** | Sample workloads (`foo-app`, `bar-app`) | `https://foo.localhost` / `https://bar.localhost` |
-| **Grafana & Prometheus (`monitoring`)** | Cluster metrics & dashboards (user: `admin`) | `https://grafana.localhost` |
-| **Flux CD (`flux-system`)** | GitOps reconciliation UI & controllers | `https://flux.localhost` |
-| **Traefik & cert-manager** | Local HTTPS Gateway for `*.localhost` | `kubectl --context kind-local get pods -A` |
-
-Delete the lab cluster anytime with `kind delete cluster --name local && rm -f compose.override.yaml infrastructure/compose/kubeconfig/config`.
-
-### In Docker (`docker compose`)
-
-`docker compose up -d` starts three long-running services plus two automatic one-shot setup containers:
-
-| Container | Role | Port / Exposure |
-| --- | --- | --- |
-| `ui` (LibreChat `v0.8.9`) | Local login & chat UI | `http://127.0.0.1:3080` (loopback only) |
-| `api` (RCAnnon FastAPI) | Read-only K8s collector, evidence hashing, 3 LangGraph workflows | Internal Docker network only |
-| `mongodb` (MongoDB `8.0`) | User accounts & chat history (`rcannon_mongo_data`) | Internal Docker network only |
-| `secrets-init` / `ui-bootstrap` | One-shot setup creating per-service tokens & admin login (exits `0`) | `network_mode: none` / internal DB only |
-
-Stop the stack anytime with `docker compose down` (add `-v` to wipe persisted volumes).
-
----
-
-## Choosing a Workflow Model
-
-| Model Alias | Strategy | Calls | Output |
-| --- | --- | --- | --- |
-| `rcannon-base` | Single-agent free-form | 1 | Narrative Markdown |
-| `rcannon-optimal` | Structured single-agent | 1 | 5-heading RCA report |
-| `rcannon-mas` | 3 parallel specialists -> coordinator | 4 | 5-heading RCA + claim cross-checks |
-
-## Troubleshooting
-
-- **`Live Kubernetes collector is not configured.`**: No cluster kubeconfig is wired into `api`. Run `bash infrastructure/k8s/bootstrap.sh` (for local Kind) or mount your own kubeconfig via `compose.kube.yaml`, then run `docker compose up -d`.
-- **`api_unreachable`**: Your mounted kubeconfig `server:` points to `127.0.0.1` (unreachable inside containers) or `api` is not on the cluster's Docker network. For local Kind, re-run `bash infrastructure/k8s/bootstrap.sh && docker compose up -d`—it configures `https://local-control-plane:6443` on the `kind` network automatically.
-
-## Next Steps
-
-| Need | Where to Go |
-| --- | --- |
-| Connect `api` to your Kind or remote cluster (`compose.kube.yaml`) | [Compose Operations](../infrastructure/compose/README.md) |
-| Run with prebuilt GHCR images (`0.1.6`, `latest`) or inside a management K8s cluster | [Container Image](../docs/container-image.md) | <!-- x-release-please-version -->
-| Understand trust boundaries, redaction, and `EvidenceSnapshot/v1` contracts | [Architecture](../docs/architecture.md) |
-| Build from source, run offline tests, or contribute | [Contributing](../CONTRIBUTING.md) |
+- [Connect your own Kubernetes cluster](../infrastructure/compose/README.md#mounting-read-only-target-kubeconfig-and-ca-files)
+- [Enable an OpenAI-compatible model provider](../infrastructure/compose/README.md#enabling-live-openai-compatible-api-inference)
+- [Deploy the container in a management cluster](container-image.md#in-a-separate-management-kubernetes-cluster)
+- [Build from source and run tests](../CONTRIBUTING.md#local-development-quick-start)
